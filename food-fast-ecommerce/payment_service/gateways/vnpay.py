@@ -1,1 +1,0 @@
-# VNPay gateway

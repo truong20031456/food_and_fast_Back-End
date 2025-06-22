@@ -1,4 +1,0 @@
-fastapi==0.104.1
-psycopg2-binary==2.9.9
-pandas==2.1.4
-plotly==5.17.0
