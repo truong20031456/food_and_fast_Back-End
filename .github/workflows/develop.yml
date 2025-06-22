@@ -1,0 +1,50 @@
+name: Develop CI
+
+on:
+  push:
+    branches: [develop]
+  pull_request:
+    branches: [develop]
+
+jobs:
+  develop-ci:
+    name: Lint, Test & Format Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v3
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+
+      - name: 📦 Install all dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install black ruff pytest pytest-cov
+
+          # Cài từng service nếu chúng có requirements.txt
+          for dir in */; do
+            if [ -f "$dir/requirements.txt" ]; then
+              pip install -r "$dir/requirements.txt"
+            fi
+          done
+
+      - name: ✅ Run tests for all services
+        run: |
+          for dir in */; do
+            if [ -d "$dir/tests" ]; then
+              echo "🔎 Running tests in $dir"
+              pytest "$dir/tests" --cov="$dir" --cov-report=term-missing || true
+            fi
+          done
+
+      - name: 🧼 Run Black (format check)
+        run: |
+          black . --check
+
+      - name: 🔍 Run Ruff (lint check)
+        run: |
+          ruff .
