@@ -61,5 +61,5 @@ jobs:
       - name: 🐳 Push Docker Image
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
         run: |
-          docker tag ${{ github.repository }}:auth-${{ github.sha }} your_dockerhub_username/auth_service:latest
-          docker push your_dockerhub_username/auth_service:latest
+          docker tag ${{ github.repository }}:auth-${{ github.sha }} truongcaovan/auth_service:latest
+          truongcaovan/auth_service:latest
