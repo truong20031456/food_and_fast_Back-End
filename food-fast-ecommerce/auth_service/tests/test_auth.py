@@ -3,7 +3,6 @@ from httpx import AsyncClient
 from fastapi import status
 from main import app
 from core.database import Base, engine
-import asyncio
 from jose import jwt
 import os
 

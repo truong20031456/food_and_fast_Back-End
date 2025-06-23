@@ -3,7 +3,6 @@
 from fastapi import FastAPI
 from controllers.auth_controller import router as auth_router
 from core.database import engine, Base
-import asyncio
 from contextlib import asynccontextmanager
 
 

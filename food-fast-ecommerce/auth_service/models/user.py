@@ -1,6 +1,6 @@
 # User models
 
-from sqlalchemy import Column, Integer, String, DateTime, func
+from sqlalchemy import Column, Integer, String, DateTime, func, Boolean
 from core.database import Base
 
 

@@ -35,8 +35,6 @@ async def get_current_user_dependency(
     return user
 
 
-async def get_user_by_username(username: str, db: AsyncSession = Depends(get_db)):
-    return await db.run_sync(lambda s: get_user_by_username(s, username))
 
 
 @router.post("/register", response_model=UserRead)
