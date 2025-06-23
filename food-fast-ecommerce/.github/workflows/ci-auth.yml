@@ -5,10 +5,11 @@ on:
     paths:
       - 'auth_service/**'
     branches: [develop, main, feature/auth_service]
+
   pull_request:
     paths:
       - 'auth_service/**'
-    branches: [develop, main, auth_service]
+    branches: [develop, main, feature/auth_service]  # 🛠️ Sửa lại từ "auth_service" (sai) thành "feature/auth_service"
 
 jobs:
   auth-ci:
@@ -29,12 +30,12 @@ jobs:
           cd auth_service
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install -r dev-requirements.txt
+          if [ -f dev-requirements.txt ]; then pip install -r dev-requirements.txt; fi
 
       - name: ✅ Run Unit Tests
         run: |
           cd auth_service
-          pytest tests/test_auth.py -v  > result.log || true
+          pytest tests/test_auth.py -v > result.log || true
           cat result.log
 
       - name: 📊 Run Coverage Report
