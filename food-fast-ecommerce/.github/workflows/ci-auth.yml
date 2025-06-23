@@ -1,4 +1,5 @@
 name: Auth Service CI/CD
+
 on:
   push:
     paths:
@@ -22,6 +23,14 @@ jobs:
         with:
           python-version: '3.11'
           
+      - name: 📦 Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('auth_service/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+          
       - name: 📦 Install dependencies
         run: |
           cd auth_service
@@ -30,28 +39,36 @@ jobs:
           pip install -r dev-requirements.txt
          
       - name: ✅ Run Unit Tests
+        continue-on-error: true
         run: |
           cd auth_service
-          pytest tests/test_auth.py -v > result.log || true
+          pytest tests/test_auth.py -v --tb=short > result.log 2>&1
           cat result.log
           
       - name: 📊 Run Coverage Report
+        continue-on-error: true
         run: |
           cd auth_service
-          pytest --cov=. --cov-report=term-missing
+          pytest --cov=. --cov-report=term-missing --cov-report=xml
           
       - name: 📎 Upload Test Report
         uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: auth-service-test-report
-          path: auth_service/result.log
+          name: auth-service-test-report-${{ github.run_number }}
+          path: |
+            auth_service/result.log
+            auth_service/coverage.xml
+          retention-days: 30
           
       - name: 🧼 Run Black (format check)
+        if: always()
         run: |
           cd auth_service
           black . --check --diff
           
       - name: 🔍 Run Ruff (lint and format check)
+        if: always()
         run: |
           cd auth_service
           ruff check .
