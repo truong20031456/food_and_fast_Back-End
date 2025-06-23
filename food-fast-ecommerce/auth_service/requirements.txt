@@ -1,14 +1,9 @@
+# Core dependencies
 fastapi
-uvicorn
+uvicorn[standard]
 sqlalchemy
 asyncpg
 bcrypt
 python-jose[cryptography]
 python-dotenv
 psycopg2-binary
-
-# Optional dev dependencies
-black
-ruff
-pytest
-pytest-cov

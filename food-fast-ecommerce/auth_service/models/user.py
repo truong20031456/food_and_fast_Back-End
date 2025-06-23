@@ -11,4 +11,11 @@ class User(Base):
     email = Column(String(255), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    is_active = Column(Boolean, default=True)
+    is_verified = Column(Boolean, default=False)
+    phone = Column(String(20), nullable=True)
+    created_at = Column(Integer, nullable=True)
+
+    def __repr__(self):
+        return f"<User(id={self.id}, email={self.email}, username={self.username})>"
