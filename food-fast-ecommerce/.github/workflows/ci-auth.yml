@@ -4,11 +4,11 @@ on:
   push:
     paths:
       - 'auth_service/**'
-    branches: [develop, main]
+    branches: [develop, main, feature/auth_service]
   pull_request:
     paths:
       - 'auth_service/**'
-    branches: [develop, main]
+    branches: [develop, main, auth_service]
 
 jobs:
   auth-ci:
