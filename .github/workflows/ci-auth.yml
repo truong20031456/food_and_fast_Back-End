@@ -31,10 +31,22 @@ jobs:
           pip install -r requirements.txt
           pip install black ruff pytest pytest-cov
 
-      - name: ✅ Run unit tests with coverage
+      - name: ✅ Run Unit Tests
+        run: |
+          cd auth_service
+          pytest tests/test_auth.py > result.log || true
+          cat result.log
+
+      - name: 📊 Run Coverage Report
         run: |
           cd auth_service
           pytest --cov=. --cov-report=term-missing
+
+      - name: 📎 Upload Test Report (optional)
+        uses: actions/upload-artifact@v4
+        with:
+          name: auth-service-test-report
+          path: auth_service/result.log
 
       - name: 🧼 Run Black (format check)
         run: |
