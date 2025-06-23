@@ -1,9 +1,11 @@
 fastapi
 uvicorn
 sqlalchemy
-pydantic
-passlib[bcrypt]
-python-jose
+asyncpg
+bcrypt
+python-jose[cryptography]
+python-dotenv
+psycopg2-binary
 
 # Optional dev dependencies
 black
