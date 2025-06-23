@@ -1,0 +1,95 @@
+name: Auth Service CI/CD
+on:
+  push:
+    paths:
+      - 'auth_service/**'
+    branches: [auth_service, develop]
+  pull_request:
+    paths:
+      - 'auth_service/**'
+    branches: [auth_service, develop]
+jobs:
+  auth-ci:
+    name: Build, Test, Lint, Docker
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: 🐍 Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: 📦 Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('food-fast-ecommerce/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+          
+      - name: 📦 Install dependencies
+        run: |
+          cd food-fast-ecommerce
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r dev-requirements.txt
+         
+      - name: ✅ Run Unit Tests
+
+        run: |
+          cd food-fast-ecommerce/auth_service
+          pytest tests/test_auth.py -v --tb=short > result.log 2>&1
+          cat result.log
+          
+      - name: 📊 Run Coverage Report
+      
+        run: |
+          cd food-fast-ecommerce/auth_service
+          pytest --cov=. --cov-report=term-missing --cov-report=xml
+          
+      - name: 📎 Upload Test Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: auth-service-test-report-${{ github.run_number }}
+          path: |
+            food-fast-ecommerce/auth_service/result.log
+            food-fast-ecommerce/auth_service/coverage.xml
+          retention-days: 30
+          
+      - name: 🧼 Run Black (format check)
+        if: always()
+        run: |
+          cd food-fast-ecommerce/auth_service
+          black . --check --diff
+          
+      - name: 🔍 Run Ruff (lint and format check)
+        if: always()
+        run: |
+          cd food-fast-ecommerce/auth_service
+          echo "Current directory: $(pwd)"
+          echo "Ruff version: $(ruff --version)"
+          echo "Running ruff check..."
+          ruff check .
+          echo "Running ruff format check..."
+          ruff format --check
+          
+      - name: 🐳 Docker Build
+        run: |
+          cd food-fast-ecommerce/auth_service
+          docker build -t ${{ github.repository }}:auth-${{ github.sha }} .
+          
+      - name: ☁️ Login to Docker Hub
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          
+      - name: 🐳 Push Docker Image
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+        run: |
+          docker tag ${{ github.repository }}:auth-${{ github.sha }} truongcaovan/auth_service:latest
+          docker push truongcaovan/auth_service:latest

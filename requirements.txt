@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+sqlalchemy
+pydantic
+passlib[bcrypt]
+python-jose
+
+# Optional dev dependencies
+black
+ruff
+pytest
+pytest-cov
