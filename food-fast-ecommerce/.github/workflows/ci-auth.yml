@@ -59,7 +59,8 @@ jobs:
       - name: 🔍 Run Ruff (lint check)
         run: |
           cd food-fast-ecommerce/auth_service
-          pip install ruff
+          ruff clean
+          ruff format
           ruff check 
 
       - name: 🐳 Docker Build
