@@ -37,14 +37,14 @@ jobs:
           pip install -r dev-requirements.txt
          
       - name: ✅ Run Unit Tests
-        continue-on-error: true
+
         run: |
           cd food-fast-ecommerce/auth_service
           pytest tests/test_auth.py -v --tb=short > result.log 2>&1
           cat result.log
           
       - name: 📊 Run Coverage Report
-        continue-on-error: true
+      
         run: |
           cd food-fast-ecommerce/auth_service
           pytest --cov=. --cov-report=term-missing --cov-report=xml
@@ -69,7 +69,11 @@ jobs:
         if: always()
         run: |
           cd food-fast-ecommerce/auth_service
+          echo "Current directory: $(pwd)"
+          echo "Ruff version: $(ruff --version)"
+          echo "Running ruff check..."
           ruff check .
+          echo "Running ruff format check..."
           ruff format --check
           
       - name: 🐳 Docker Build
