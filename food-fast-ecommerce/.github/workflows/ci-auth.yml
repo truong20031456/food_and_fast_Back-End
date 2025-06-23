@@ -57,6 +57,7 @@ jobs:
       - name: 🔍 Run Ruff (lint check)
         run: |
           cd auth_service
+          ruff . --fix
           ruff .
 
       - name: 🐳 Docker Build
