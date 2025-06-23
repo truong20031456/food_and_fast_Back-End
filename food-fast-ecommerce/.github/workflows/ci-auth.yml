@@ -3,11 +3,11 @@ on:
   push:
     paths:
       - 'auth_service/**'
-    branches: [develop, main]
+    branches: [auth_service, develop]
   pull_request:
     paths:
       - 'auth_service/**'
-    branches: [develop, main]
+    branches: [auth_service, develop]
 jobs:
   auth-ci:
     name: Build, Test, Lint, Docker
