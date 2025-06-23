@@ -4,9 +4,13 @@ from fastapi import status
 from main import app
 from core.database import Base, engine
 import asyncio
-
+from jose import jwt
 import os
+
 os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
+
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your_jwt_secret_key_here")
+ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 
 @pytest.fixture(scope="module", autouse=True)
 async def prepare_database():
@@ -30,15 +34,6 @@ async def test_register_and_login_all_cases():
         assert data["username"] == "testuser"
         assert data["email"] == "testuser@example.com"
 
-        # Đăng ký trùng username
-        response = await ac.post("/auth/register", json={
-            "username": "testuser",
-            "email": "testuser2@example.com",
-            "password": "testpassword"
-        })
-        assert response.status_code == 400
-        assert response.json()["detail"] == "Username already registered"
-
         # Đăng nhập đúng
         response = await ac.post("/auth/login", json={
             "username": "testuser",
@@ -48,6 +43,21 @@ async def test_register_and_login_all_cases():
         data = response.json()
         assert "access_token" in data
         assert data["token_type"] == "bearer"
+
+        # Giải mã token kiểm tra payload
+        payload = jwt.decode(data["access_token"], SECRET_KEY, algorithms=[ALGORITHM])
+        assert payload["username"] == "testuser"
+        assert payload["email"] == "testuser@example.com"
+        assert "id" in payload
+
+        # Đăng ký trùng username
+        response = await ac.post("/auth/register", json={
+            "username": "testuser",
+            "email": "testuser2@example.com",
+            "password": "testpassword"
+        })
+        assert response.status_code == 400
+        assert response.json()["detail"] == "Username already registered"
 
         # Đăng nhập sai mật khẩu
         response = await ac.post("/auth/login", json={

@@ -40,7 +40,11 @@ async def login_user(db: AsyncSession, user_login: UserLogin):
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password")
     access_token = create_access_token(
-        data={"sub": user.username},
+        user={
+            "id": user.id,
+            "username": user.username,
+            "email": user.email
+        },
         expires_delta=timedelta(minutes=30)
     )
     return {"access_token": access_token, "token_type": "bearer"}
