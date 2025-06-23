@@ -9,7 +9,7 @@ on:
   pull_request:
     paths:
       - 'auth_service/**'
-    branches: [develop, main, feature/auth_service]  # 🛠️ Sửa lại từ "auth_service" (sai) thành "feature/auth_service"
+    branches: [develop, main, feature/auth_service]
 
 jobs:
   auth-ci:
@@ -31,42 +31,40 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -r dev-requirements.txt
-          pip install ruff
 
       - name: ✅ Run Unit Tests
         run: |
-          cd auth_service
+          cd food-fast-ecommerce/auth_service
           pytest tests/test_auth.py -v > result.log || true
           cat result.log
 
       - name: 📊 Run Coverage Report
         run: |
-          cd auth_service
+          cd food-fast-ecommerce/auth_service
           pytest --cov=. --cov-report=term-missing
 
-      - name: 📎 Upload Test Report (optional)
+      - name: 📎 Upload Test Report
         uses: actions/upload-artifact@v4
         with:
           name: auth-service-test-report
-          path: auth_service/result.log
+          path: food-fast-ecommerce/auth_service/result.log
 
       - name: 🧼 Run Black (format check)
         run: |
-          cd auth_service
+          cd food-fast-ecommerce/auth_service
           black .
           black . --check
 
       - name: 🔍 Run Ruff (lint check)
         run: |
-          cd auth_service
+          cd food-fast-ecommerce/auth_service
           ruff format .
           ruff check .
           ruff check . --fix
 
-
       - name: 🐳 Docker Build
         run: |
-          cd auth_service
+          cd food-fast-ecommerce/auth_service
           docker build -t ${{ github.repository }}:auth-${{ github.sha }} .
 
       - name: ☁️ Login to Docker Hub
