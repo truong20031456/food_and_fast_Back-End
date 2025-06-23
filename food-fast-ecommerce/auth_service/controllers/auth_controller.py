@@ -35,8 +35,6 @@ async def get_current_user_dependency(
     return user
 
 
-
-
 @router.post("/register", response_model=UserRead)
 async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
     new_user = await create_user(db, user)
