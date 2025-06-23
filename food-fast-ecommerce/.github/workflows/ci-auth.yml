@@ -33,7 +33,8 @@ jobs:
           
       - name: 📦 Install dependencies
         run: |
-          cd auth_service
+          
+          cd food-fast-ecommerce
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -r dev-requirements.txt
@@ -41,14 +42,14 @@ jobs:
       - name: ✅ Run Unit Tests
         continue-on-error: true
         run: |
-          cd auth_service
+          cd food-fast-ecommerce/auth_service
           pytest tests/test_auth.py -v --tb=short > result.log 2>&1
           cat result.log
           
       - name: 📊 Run Coverage Report
         continue-on-error: true
         run: |
-          cd auth_service
+          cd food-fast-ecommerce/auth_service
           pytest --cov=. --cov-report=term-missing --cov-report=xml
           
       - name: 📎 Upload Test Report
@@ -64,19 +65,19 @@ jobs:
       - name: 🧼 Run Black (format check)
         if: always()
         run: |
-          cd auth_service
+          cd food-fast-ecommerce/auth_service
           black . --check --diff
           
       - name: 🔍 Run Ruff (lint and format check)
         if: always()
         run: |
-          cd auth_service
-          ruff check .
+          cd food-fast-ecommerce/auth_service
+          ruff check 
           ruff format --check
           
       - name: 🐳 Docker Build
         run: |
-          cd auth_service
+          cd ruff format --check/auth_service
           docker build -t ${{ github.repository }}:auth-${{ github.sha }} .
           
       - name: ☁️ Login to Docker Hub
