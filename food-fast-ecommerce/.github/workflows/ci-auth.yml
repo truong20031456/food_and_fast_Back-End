@@ -1,5 +1,4 @@
 name: Auth Service CI/CD
-
 on:
   push:
     paths:
@@ -9,7 +8,6 @@ on:
     paths:
       - 'auth_service/**'
     branches: [develop, main]
-
 jobs:
   auth-ci:
     name: Build, Test, Lint, Docker
@@ -27,13 +25,12 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('auth_service/requirements*.txt') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('food-fast-ecommerce/requirements*.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-
           
       - name: 📦 Install dependencies
         run: |
-          
           cd food-fast-ecommerce
           python -m pip install --upgrade pip
           pip install -r requirements.txt
@@ -58,8 +55,8 @@ jobs:
         with:
           name: auth-service-test-report-${{ github.run_number }}
           path: |
-            auth_service/result.log
-            auth_service/coverage.xml
+            food-fast-ecommerce/auth_service/result.log
+            food-fast-ecommerce/auth_service/coverage.xml
           retention-days: 30
           
       - name: 🧼 Run Black (format check)
@@ -72,12 +69,12 @@ jobs:
         if: always()
         run: |
           cd food-fast-ecommerce/auth_service
-          ruff check 
+          ruff check .
           ruff format --check
           
       - name: 🐳 Docker Build
         run: |
-          cd ruff format --check/auth_service
+          cd food-fast-ecommerce/auth_service
           docker build -t ${{ github.repository }}:auth-${{ github.sha }} .
           
       - name: ☁️ Login to Docker Hub
