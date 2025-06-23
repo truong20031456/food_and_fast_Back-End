@@ -51,6 +51,7 @@ jobs:
       - name: 🧼 Run Black (format check)
         run: |
           cd auth_service
+          black .
           black . --check
 
       - name: 🔍 Run Ruff (lint check)
