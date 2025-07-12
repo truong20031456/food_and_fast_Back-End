@@ -1,7 +1,0 @@
-# Code formatting and linting
-black
-ruff
-
-# Testing
-pytest
-pytest-cov

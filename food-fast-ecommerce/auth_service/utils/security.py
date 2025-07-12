@@ -1,53 +1,54 @@
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from datetime import datetime, timedelta, UTC
-import os
-from dotenv import load_dotenv
+from typing import Optional
 
-load_dotenv()
+from ..core.config import settings # Import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-SECRET_KEY = os.getenv("JWT_SECRET_KEY")
-ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
-
-
-def verify_password(plain_password, hashed_password):
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify a password against its hash"""
     return pwd_context.verify(plain_password, hashed_password)
 
 
-def get_password_hash(password):
+def get_password_hash(password: str) -> str:
+    """Hash a password using bcrypt"""
     return pwd_context.hash(password)
 
 
-def create_access_token(user: dict, expires_delta: timedelta = None):
+def create_access_token(user: dict, expires_delta: Optional[timedelta] = None) -> str:
+    """Create an access token for a user"""
     to_encode = {
-        "sub": user["username"],
+        "sub": str(user["id"]), # Use user ID as sub for consistency
         "id": user["id"],
-        "username": user["username"],
-        "email": user["email"],
+        "username": user.get("username"), # Use .get() for optional fields
+        "email": user.get("email"),
     }
     if expires_delta:
         expire = datetime.now(UTC) + expires_delta
     else:
-        expire = datetime.now(UTC) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = datetime.now(UTC) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+    # SECRET_KEY is guaranteed to be set by Pydantic Settings
+    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
 
-def decode_access_token(token: str):
+def decode_access_token(token: str) -> Optional[dict]:
+    """Decode an access token and return its payload"""
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        return (
-            {
-                "id": payload.get("id"),
-                "username": payload.get("username"),
-                "email": payload.get("email"),
-            }
-            if payload.get("username")
-            else None
-        )
+        # SECRET_KEY is guaranteed to be set by Pydantic Settings
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        # Ensure 'id' is present in the payload
+        if "id" not in payload:
+            return None
+
+        return {
+            "id": payload.get("id"),
+            "username": payload.get("username"),
+            "email": payload.get("email"),
+        }
     except JWTError:
         return None

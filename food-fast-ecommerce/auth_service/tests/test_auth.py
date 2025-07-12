@@ -1,88 +1,101 @@
 import pytest
 from httpx import AsyncClient
 from fastapi import status
-from main import app
-from core.database import Base, engine
 from jose import jwt
+
+# Assuming SECRET_KEY and ALGORITHM are loaded from conftest.py's environment setup
 import os
-
-os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
-
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your_jwt_secret_key_here")
-ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
-
-
-@pytest.fixture(scope="module", autouse=True)
-async def prepare_database():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    yield
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
-
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+ALGORITHM = os.getenv("JWT_ALGORITHM")
 
 @pytest.mark.asyncio
-async def test_register_and_login_all_cases():
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        # Đăng ký thành công
-        response = await ac.post(
-            "/auth/register",
-            json={
-                "username": "testuser",
-                "email": "testuser@example.com",
-                "password": "testpassword",
-            },
-        )
-        assert response.status_code == status.HTTP_200_OK
-        data = response.json()
-        assert data["username"] == "testuser"
-        assert data["email"] == "testuser@example.com"
+async def test_register_and_login_all_cases(client: AsyncClient):
+    # Successful Registration
+    register_data = {
+        "email": "testuser@example.com",
+        "username": "testuser",
+        "password": "Testpassword1!",
+        "confirm_password": "Testpassword1!",
+        "terms_accepted": True,
+    }
+    response = await client.post("/register", json=register_data)
+    assert response.status_code == status.HTTP_201_CREATED
+    data = response.json()
+    assert "access_token" in data
+    assert "refresh_token" in data
+    assert data["user"]["email"] == "testuser@example.com"
+    assert data["user"]["username"] == "testuser"
 
-        # Đăng nhập đúng
-        response = await ac.post(
-            "/auth/login", json={"username": "testuser", "password": "testpassword"}
-        )
-        assert response.status_code == status.HTTP_200_OK
-        data = response.json()
-        assert "access_token" in data
-        assert data["token_type"] == "bearer"
+    # Successful Login
+    login_data = {
+        "email": "testuser@example.com",
+        "password": "Testpassword1!"
+    }
+    response = await client.post("/login", json=login_data)
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()
+    assert "access_token" in data
+    assert data["token_type"] == "bearer"
 
-        # Giải mã token kiểm tra payload
-        payload = jwt.decode(data["access_token"], SECRET_KEY, algorithms=[ALGORITHM])
-        assert payload["username"] == "testuser"
-        assert payload["email"] == "testuser@example.com"
-        assert "id" in payload
+    # Decode token to check payload
+    payload = jwt.decode(data["access_token"], SECRET_KEY, algorithms=[ALGORITHM])
+    assert payload["email"] == "testuser@example.com"
+    assert payload["id"] is not None
 
-        # Đăng ký trùng username
-        response = await ac.post(
-            "/auth/register",
-            json={
-                "username": "testuser",
-                "email": "testuser2@example.com",
-                "password": "testpassword",
-            },
-        )
-        assert response.status_code == 400
-        assert response.json()["detail"] == "Username already registered"
+    # Register with existing email
+    register_data_duplicate_email = {
+        "email": "testuser@example.com",
+        "username": "anotheruser",
+        "password": "Anotherpassword1!",
+        "confirm_password": "Anotherpassword1!",
+        "terms_accepted": True,
+    }
+    response = await client.post("/register", json=register_data_duplicate_email)
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.json()["detail"] == "Email already registered"
 
-        # Đăng nhập sai mật khẩu
-        response = await ac.post(
-            "/auth/login", json={"username": "testuser", "password": "wrongpassword"}
-        )
-        assert response.status_code == 401
-        assert response.json()["detail"] == "Incorrect username or password"
+    # Login with incorrect password
+    response = await client.post(
+        "/login", json={"email": "testuser@example.com", "password": "wrongpassword"}
+    )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert response.json()["detail"] == "Invalid credentials"
 
-        # Đăng nhập user không tồn tại
-        response = await ac.post(
-            "/auth/login", json={"username": "notfound", "password": "any"}
-        )
-        assert response.status_code == 401
-        assert response.json()["detail"] == "Incorrect username or password"
+    # Login with non-existent user
+    response = await client.post(
+        "/login", json={"email": "nonexistent@example.com", "password": "any"}
+    )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert response.json()["detail"] == "Invalid credentials"
 
-        # Đăng ký thiếu trường
-        response = await ac.post("/auth/register", json={"username": "user2"})
-        assert response.status_code == 422
+    # Register with missing fields
+    response = await client.post("/register", json={"email": "missing@example.com"})
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
-        # Đăng nhập thiếu trường
-        response = await ac.post("/auth/login", json={"username": "testuser"})
-        assert response.status_code == 422
+    # Login with missing fields
+    response = await client.post("/login", json={"email": "testuser@example.com"})
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    # Test password strength validation during registration
+    weak_password_data = {
+        "email": "weakpass@example.com",
+        "username": "weakpass",
+        "password": "short",
+        "confirm_password": "short",
+        "terms_accepted": True,
+    }
+    response = await client.post("/register", json=weak_password_data)
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert "Password must be at least 8 characters long" in response.json()["detail"]["password"]
+
+    # Test password mismatch during registration
+    mismatch_password_data = {
+        "email": "mismatch@example.com",
+        "username": "mismatch",
+        "password": "StrongPass1!",
+        "confirm_password": "MismatchPass2@",
+        "terms_accepted": True,
+    }
+    response = await client.post("/register", json=mismatch_password_data)
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert "Passwords do not match" in response.json()["detail"]["confirm_password"]

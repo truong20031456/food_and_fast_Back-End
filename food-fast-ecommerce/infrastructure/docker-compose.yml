@@ -1,22 +1,282 @@
 version: '3.8'
+
 services:
+  # Database
   postgres:
     image: postgres:15
+    container_name: food_fast_postgres
     environment:
       POSTGRES_DB: food_fast
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: password
     ports:
       - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - food_fast_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d food_fast"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
+  # Cache
   redis:
     image: redis:7-alpine
+    container_name: food_fast_redis
     ports:
       - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - food_fast_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
+  # Search
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: food_fast_elasticsearch
     environment:
       - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
     ports:
       - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - food_fast_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # API Gateway
+  api_gateway:
+    build:
+      context: ../api_gateway
+      dockerfile: Dockerfile
+    container_name: food_fast_api_gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - GATEWAY_HOST=0.0.0.0
+      - GATEWAY_PORT=8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - food_fast_network
+    restart: unless-stopped
+
+  # Auth Service
+  auth_service:
+    build:
+      context: ../auth_service
+      dockerfile: Dockerfile
+    container_name: food_fast_auth_service
+    ports:
+      - "8001:8001"
+    environment:
+      - AUTH_SERVICE_HOST=0.0.0.0
+      - AUTH_SERVICE_PORT=8001
+      - DATABASE_URL=postgresql://admin:password@postgres:5432/food_fast
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - food_fast_network
+    restart: unless-stopped
+
+  # User Service
+  user_service:
+    build:
+      context: ../user_service
+      dockerfile: Dockerfile
+    container_name: food_fast_user_service
+    ports:
+      - "8002:8002"
+    environment:
+      - USER_SERVICE_HOST=0.0.0.0
+      - USER_SERVICE_PORT=8002
+      - DATABASE_URL=postgresql://admin:password@postgres:5432/food_fast
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - food_fast_network
+    restart: unless-stopped
+
+  # Product Service
+  product_service:
+    build:
+      context: ../product_service
+      dockerfile: Dockerfile
+    container_name: food_fast_product_service
+    ports:
+      - "8003:8003"
+    environment:
+      - PRODUCT_SERVICE_HOST=0.0.0.0
+      - PRODUCT_SERVICE_PORT=8003
+      - DATABASE_URL=postgresql://admin:password@postgres:5432/food_fast
+      - REDIS_URL=redis://redis:6379
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - food_fast_network
+    restart: unless-stopped
+
+  # Order Service
+  order_service:
+    build:
+      context: ../order_service
+      dockerfile: Dockerfile
+    container_name: food_fast_order_service
+    ports:
+      - "8004:8004"
+    environment:
+      - ORDER_SERVICE_HOST=0.0.0.0
+      - ORDER_SERVICE_PORT=8004
+      - DATABASE_URL=postgresql://admin:password@postgres:5432/food_fast
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - food_fast_network
+    restart: unless-stopped
+
+  # Payment Service
+  payment_service:
+    build:
+      context: ../payment_service
+      dockerfile: Dockerfile
+    container_name: food_fast_payment_service
+    ports:
+      - "8005:8005"
+    environment:
+      - PAYMENT_SERVICE_HOST=0.0.0.0
+      - PAYMENT_SERVICE_PORT=8005
+      - DATABASE_URL=postgresql://admin:password@postgres:5432/food_fast
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - food_fast_network
+    restart: unless-stopped
+
+  # Notification Service
+  notification_service:
+    build:
+      context: ../notification_service
+      dockerfile: Dockerfile
+    container_name: food_fast_notification_service
+    ports:
+      - "8006:8006"
+    environment:
+      - NOTIFICATION_SERVICE_HOST=0.0.0.0
+      - NOTIFICATION_SERVICE_PORT=8006
+      - DATABASE_URL=postgresql://admin:password@postgres:5432/food_fast
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - food_fast_network
+    restart: unless-stopped
+
+  # Analytics Service
+  analytics_service:
+    build:
+      context: ../analytics_service
+      dockerfile: Dockerfile
+    container_name: food_fast_analytics_service
+    ports:
+      - "8007:8007"
+    environment:
+      - ANALYTICS_SERVICE_HOST=0.0.0.0
+      - ANALYTICS_SERVICE_PORT=8007
+      - DATABASE_URL=postgresql://admin:password@postgres:5432/food_fast
+      - REDIS_URL=redis://redis:6379
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - food_fast_network
+    restart: unless-stopped
+
+  # Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: food_fast_prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - food_fast_network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: food_fast_grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - food_fast_network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  elasticsearch_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  food_fast_network:
+    driver: bridge
