@@ -1,12 +1,13 @@
 # FastAPI Core
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
-
+alembic
 # Authentication & Security
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.6
 bcrypt==4.0.1
+Pillow>=10.0.0  # for image processing
 
 # Database
 SQLAlchemy==2.0.23

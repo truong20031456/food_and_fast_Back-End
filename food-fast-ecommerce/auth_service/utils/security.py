@@ -3,9 +3,10 @@ from jose import JWTError, jwt
 from datetime import datetime, timedelta, UTC
 from typing import Optional
 
-from ..core.config import settings # Import settings
+from core.config import settings  # Import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against its hash"""
@@ -20,19 +21,23 @@ def get_password_hash(password: str) -> str:
 def create_access_token(user: dict, expires_delta: Optional[timedelta] = None) -> str:
     """Create an access token for a user"""
     to_encode = {
-        "sub": str(user["id"]), # Use user ID as sub for consistency
+        "sub": str(user["id"]),  # Use user ID as sub for consistency
         "id": user["id"],
-        "username": user.get("username"), # Use .get() for optional fields
+        "username": user.get("username"),  # Use .get() for optional fields
         "email": user.get("email"),
     }
     if expires_delta:
         expire = datetime.now(UTC) + expires_delta
     else:
-        expire = datetime.now(UTC) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = datetime.now(UTC) + timedelta(
+            minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
+        )
     to_encode.update({"exp": expire})
 
     # SECRET_KEY is guaranteed to be set by Pydantic Settings
-    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    encoded_jwt = jwt.encode(
+        to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
+    )
     return encoded_jwt
 
 
@@ -40,7 +45,9 @@ def decode_access_token(token: str) -> Optional[dict]:
     """Decode an access token and return its payload"""
     try:
         # SECRET_KEY is guaranteed to be set by Pydantic Settings
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
         # Ensure 'id' is present in the payload
         if "id" not in payload:
             return None

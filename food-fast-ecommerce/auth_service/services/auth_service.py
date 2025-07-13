@@ -10,9 +10,9 @@ from services.user_service import UserService
 from services.token_service import TokenService
 from services.audit_service import AuditService
 from services.cache_service import CacheService
-from utils.logger import get_logger # Import logger
+from utils.logger import get_logger  # Import logger
 
-logger = get_logger(__name__) # Initialize logger
+logger = get_logger(__name__)  # Initialize logger
 
 
 class AuthService:
@@ -50,7 +50,9 @@ class AuthService:
             # Generate tokens
             # Ensure user object has 'id', 'username', 'email' attributes for create_access_token
             access_token = create_access_token(user=user.to_dict())
-            refresh_token = create_refresh_token(user=user.to_dict()) # Assuming create_refresh_token also takes user dict
+            refresh_token = create_refresh_token(
+                user=user.to_dict()
+            )  # Assuming create_refresh_token also takes user dict
 
             # Save refresh token
             await self.token_service.create_refresh_token(user.id, refresh_token)
@@ -75,15 +77,15 @@ class AuthService:
         except HTTPException:
             raise
         except Exception as e:
-            logger.error(f"Registration failed for email {request.email}. Error: {e}", exc_info=True)
+            logger.error(
+                f"Registration failed for email {request.email}. Error: {e}",
+                exc_info=True,
+            )
             await self.audit_service.log_user_action(
                 user_id=None,
                 action="REGISTRATION_FAILED",
                 ip_address=client_ip,
-                details={
-                    "email": request.email,
-                    "error": str(e)
-                },
+                details={"email": request.email, "error": str(e)},
             )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -158,15 +160,14 @@ class AuthService:
         except HTTPException:
             raise
         except Exception as e:
-            logger.error(f"Login failed for email {request.email}. Error: {e}", exc_info=True)
+            logger.error(
+                f"Login failed for email {request.email}. Error: {e}", exc_info=True
+            )
             await self.audit_service.log_user_action(
                 user_id=None,
                 action="LOGIN_ERROR",
                 ip_address=client_ip,
-                details={
-                    "email": request.email,
-                    "error": str(e)
-                },
+                details={"email": request.email, "error": str(e)},
             )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Login failed"
@@ -193,9 +194,7 @@ class AuthService:
                 user_id=user_id,
                 action="LOGOUT_ERROR",
                 ip_address=client_ip,
-                details={
-                    "error": str(e)
-                },
+                details={"error": str(e)},
             )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -229,8 +228,5 @@ class AuthService:
             user_id=None,
             action="LOGIN_FAILED",
             ip_address=client_ip,
-            details={
-                "email": email,
-                "attempts": attempts
-            },
+            details={"email": email, "attempts": attempts},
         )

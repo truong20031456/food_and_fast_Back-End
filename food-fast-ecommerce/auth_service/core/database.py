@@ -1,64 +1,68 @@
-from sqlalchemy import create_engine
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
-from typing import Generator
+from typing import AsyncGenerator
 import logging
 
 from .config import settings
-from models.base import Base # Import Base from models.base
+from models.base import Base  # Import Base from models.base
 
 logger = logging.getLogger(__name__)
 
-# Database engine
-engine = create_engine(
-    settings.DATABASE_URL,
+# Async Database engine
+engine = create_async_engine(
+    settings.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://"),
     echo=settings.DATABASE_ECHO,
     pool_pre_ping=True,
     pool_recycle=300,
     pool_size=5,
     max_overflow=10,
-    connect_args={"check_same_thread": False}
-    if "sqlite" in settings.DATABASE_URL
-    else {},
 )
 
-# Session factory
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Async session factory
+SessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+)
 
 
-def get_db() -> Generator:
+async def get_db() -> AsyncGenerator:
     """
-    Database dependency for FastAPI
+    Async database dependency for FastAPI
     """
-    db = SessionLocal()
+    async with SessionLocal() as db:
+        try:
+            yield db
+        except Exception as e:
+            logger.error(f"Database error: {e}")
+            await db.rollback()
+            raise
+        finally:
+            await db.close()
+
+
+async def init_db():
+    """
+    Initialize database tables asynchronously
+    """
     try:
-        yield db
-    except Exception as e:
-        logger.error(f"Database error: {e}")
-        db.rollback()
-        raise
-    finally:
-        db.close()
-
-
-def init_db():
-    """
-    Initialize database tables
-    """
-    try:
-        Base.metadata.create_all(bind=engine)
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
         logger.info("Database initialized successfully")
     except Exception as e:
         logger.error(f"Database initialization failed: {e}")
         raise
 
 
-def check_db_connection():
+async def check_db_connection():
     """
-    Check database connection
+    Check database connection asynchronously
     """
     try:
-        with engine.connect() as connection:
-            connection.execute("SELECT 1")
+        async with engine.connect() as connection:
+            await connection.execute("SELECT 1")
         logger.info("Database connection successful")
         return True
     except Exception as e:

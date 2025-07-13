@@ -5,8 +5,10 @@ from jose import jwt
 
 # Assuming SECRET_KEY and ALGORITHM are loaded from conftest.py's environment setup
 import os
+
 SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 ALGORITHM = os.getenv("JWT_ALGORITHM")
+
 
 @pytest.mark.asyncio
 async def test_register_and_login_all_cases(client: AsyncClient):
@@ -27,10 +29,7 @@ async def test_register_and_login_all_cases(client: AsyncClient):
     assert data["user"]["username"] == "testuser"
 
     # Successful Login
-    login_data = {
-        "email": "testuser@example.com",
-        "password": "Testpassword1!"
-    }
+    login_data = {"email": "testuser@example.com", "password": "Testpassword1!"}
     response = await client.post("/login", json=login_data)
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
@@ -86,7 +85,10 @@ async def test_register_and_login_all_cases(client: AsyncClient):
     }
     response = await client.post("/register", json=weak_password_data)
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
-    assert "Password must be at least 8 characters long" in response.json()["detail"]["password"]
+    assert (
+        "Password must be at least 8 characters long"
+        in response.json()["detail"]["password"]
+    )
 
     # Test password mismatch during registration
     mismatch_password_data = {
