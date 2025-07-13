@@ -10,10 +10,10 @@ This project follows a **microservices architecture** with the following service
 
 | Service | Port | Description | Status |
 |---------|------|-------------|--------|
-| **API Gateway** | 8000 | Entry point, routing, load balancing | ✅ Complete |
+| **API Gateway** | 8000 | Entry point, routing, load balancing | 🚧 In Progress |
 | **Auth Service** | 8001 | Authentication, JWT, user management | ✅ Complete |
 | **User Service** | 8002 | Profile & account management | 🚧 In Progress |
-| **Product Service** | 8003 | Catalog, inventory, reviews | ✅ Complete |
+| **Product Service** | 8003 | Catalog, inventory, reviews | 🚧 In Progress |
 | **Order Service** | 8004 | Cart, orders, delivery | 🚧 In Progress |
 | **Payment Service** | 8005 | Payment gateways & promotions | 🚧 In Progress |
 | **Notification Service** | 8006 | Email, SMS, chat support | 🚧 In Progress |
