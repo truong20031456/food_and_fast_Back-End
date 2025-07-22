@@ -1,31 +1,620 @@
-# .github/workflows/main.yml
-name: Main CI/CD
+name: CI/CD Production Pipeline
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   pull_request:
-    branches: [main]
+    branches: [ main ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build:
+  # Job kiểm tra thay đổi của từng service
+  detect-changes:
     runs-on: ubuntu-latest
-
+    outputs:
+      api-gateway: ${{ steps.changes.outputs.api-gateway }}
+      auth-service: ${{ steps.changes.outputs.auth-service }}
+      user-service: ${{ steps.changes.outputs.user-service }}
+      product-service: ${{ steps.changes.outputs.product-service }}
+      order-service: ${{ steps.changes.outputs.order-service }}
+      payment-service: ${{ steps.changes.outputs.payment-service }}
+      notification-service: ${{ steps.changes.outputs.notification-service }}
+      analytics-service: ${{ steps.changes.outputs.analytics-service }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Set up Docker
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Docker Hub (optional)
-        uses: docker/login-action@v2
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v2
+        id: changes
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          filters: |
+            api-gateway:
+              - 'api_gateway/**'
+              - 'shared/**'
+            auth-service:
+              - 'auth_service/**'
+              - 'shared/**'
+            user-service:
+              - 'user_service/**'
+              - 'shared/**'
+            product-service:
+              - 'product_service/**'
+              - 'shared/**'
+            order-service:
+              - 'order_service/**'
+              - 'shared/**'
+            payment-service:
+              - 'payment_service/**'
+              - 'shared/**'
+            notification-service:
+              - 'notification_service/**'
+              - 'shared/**'
+            analytics-service:
+              - 'analytics_service/**'
+              - 'shared/**'
 
-      - name: Build and push Docker images
+  # Test và Build cho API Gateway
+  api-gateway:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.api-gateway == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
         run: |
-          docker compose -f infrastructure/docker-compose.yml build
-          # Optional: push images
-          # docker compose -f infrastructure/docker-compose.yml push
+          cd api_gateway
+          pip install -r requirements.txt
+          pip install pytest pytest-cov flake8 black
+          
+      - name: Code formatting check
+        run: |
+          cd api_gateway
+          black --check .
+          
+      - name: Lint with flake8
+        run: |
+          cd api_gateway
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          
+      - name: Run tests
+        run: |
+          cd api_gateway
+          pytest --cov=. --cov-report=xml
+          
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./api_gateway
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api-gateway:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api-gateway:${{ github.sha }}
+
+  # Test và Build cho Auth Service
+  auth-service:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.auth-service == 'true' }}
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+          
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          cd auth_service
+          pip install -r requirements.txt
+          pip install pytest pytest-cov flake8 black
+          
+      - name: Code formatting check
+        run: |
+          cd auth_service
+          black --check .
+          
+      - name: Lint with flake8
+        run: |
+          cd auth_service
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          
+      - name: Run tests
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+        run: |
+          cd auth_service
+          pytest --cov=. --cov-report=xml
+          
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./auth_service
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/auth-service:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/auth-service:${{ github.sha }}
+
+  # Test và Build cho User Service
+  user-service:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.user-service == 'true' }}
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+          
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          cd user_service
+          pip install -r requirements.txt
+          pip install pytest pytest-cov flake8 black
+          
+      - name: Code formatting check
+        run: |
+          cd user_service
+          black --check .
+          
+      - name: Lint with flake8
+        run: |
+          cd user_service
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          
+      - name: Run tests
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+        run: |
+          cd user_service
+          pytest --cov=. --cov-report=xml
+          
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./user_service
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/user-service:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/user-service:${{ github.sha }}
+
+  # Test và Build cho Product Service
+  product-service:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.product-service == 'true' }}
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+        env:
+          discovery.type: single-node
+          xpack.security.enabled: false
+        ports:
+          - 9200:9200
+          
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          cd product_service
+          pip install -r requirements.txt
+          pip install pytest pytest-cov flake8 black
+          
+      - name: Code formatting check
+        run: |
+          cd product_service
+          black --check .
+          
+      - name: Lint with flake8
+        run: |
+          cd product_service
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          
+      - name: Run tests
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          ELASTICSEARCH_URL: http://localhost:9200
+        run: |
+          cd product_service
+          pytest --cov=. --cov-report=xml
+          
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./product_service
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/product-service:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/product-service:${{ github.sha }}
+
+  # Test và Build cho Order Service
+  order-service:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.order-service == 'true' }}
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+          
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          cd order_service
+          pip install -r requirements.txt
+          pip install pytest pytest-cov flake8 black
+          
+      - name: Code formatting check
+        run: |
+          cd order_service
+          black --check .
+          
+      - name: Lint with flake8
+        run: |
+          cd order_service
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          
+      - name: Run tests
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          REDIS_URL: redis://localhost:6379
+        run: |
+          cd order_service
+          pytest --cov=. --cov-report=xml
+          
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./order_service
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/order-service:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/order-service:${{ github.sha }}
+
+  # Test và Build cho Payment Service
+  payment-service:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.payment-service == 'true' }}
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+          
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          cd payment_service
+          pip install -r requirements.txt
+          pip install pytest pytest-cov flake8 black
+          
+      - name: Code formatting check
+        run: |
+          cd payment_service
+          black --check .
+          
+      - name: Lint with flake8
+        run: |
+          cd payment_service
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          
+      - name: Run tests
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+        run: |
+          cd payment_service
+          pytest --cov=. --cov-report=xml
+          
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./payment_service
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/payment-service:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/payment-service:${{ github.sha }}
+
+  # Test và Build cho Notification Service
+  notification-service:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.notification-service == 'true' }}
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+          
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          cd notification_service
+          pip install -r requirements.txt
+          pip install pytest pytest-cov flake8 black
+          
+      - name: Code formatting check
+        run: |
+          cd notification_service
+          black --check .
+          
+      - name: Lint with flake8
+        run: |
+          cd notification_service
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          
+      - name: Run tests
+        env:
+          REDIS_URL: redis://localhost:6379
+        run: |
+          cd notification_service
+          pytest --cov=. --cov-report=xml
+          
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./notification_service
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/notification-service:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/notification-service:${{ github.sha }}
+
+  # Test và Build cho Analytics Service
+  analytics-service:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.analytics-service == 'true' }}
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+          
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          cd analytics_service
+          pip install -r requirements.txt
+          pip install pytest pytest-cov flake8 black
+          
+      - name: Code formatting check
+        run: |
+          cd analytics_service
+          black --check .
+          
+      - name: Lint with flake8
+        run: |
+          cd analytics_service
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          
+      - name: Run tests
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+        run: |
+          cd analytics_service
+          pytest --cov=. --cov-report=xml
+          
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./analytics_service
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/analytics-service:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/analytics-service:${{ github.sha }}
+
+  # Deploy to Production
+  deploy-production:
+    needs: [
+      detect-changes,
+      api-gateway,
+      auth-service, 
+      user-service,
+      product-service,
+      order-service,
+      payment-service,
+      notification-service,
+      analytics-service
+    ]
+    if: |
+      always() && 
+      github.ref == 'refs/heads/main' &&
+      (
+        (needs.detect-changes.outputs.api-gateway == 'true' && needs.api-gateway.result == 'success') ||
+        (needs.detect-changes.outputs.auth-service == 'true' && needs.auth-service.result == 'success') ||
+        (needs.detect-changes.outputs.user-service == 'true' && needs.user-service.result == 'success') ||
+        (needs.detect-changes.outputs.product-service == 'true' && needs.product-service.result == 'success') ||
+        (needs.detect-changes.outputs.order-service == 'true' && needs.order-service.result == 'success') ||
+        (needs.detect-changes.outputs.payment-service == 'true' && needs.payment-service.result == 'success') ||
+        (needs.detect-changes.outputs.notification-service == 'true' && needs.notification-service.result == 'success') ||
+        (needs.detect-changes.outputs.analytics-service == 'true' && needs.analytics-service.result == 'success')
+      )
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Deploy to Production
+        run: |
+          echo "Deploying to production environment..."
+          # Add your deployment scripts here
+          # Example: kubectl apply -f k8s/production/
+          # Example: helm upgrade --install food-fast ./helm-chart
+          
+      - name: Run Health Checks
+        run: |
+          echo "Running production health checks..."
+          # Add health check scripts here
+          
+      - name: Notify Deployment
+        run: |
+          echo "Production deployment completed successfully!"
+          # Add notification logic here (Slack, email, etc.)
