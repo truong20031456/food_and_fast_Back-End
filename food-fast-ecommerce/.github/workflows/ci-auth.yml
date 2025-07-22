@@ -100,10 +100,6 @@ jobs:
             auth_service/htmlcov/
           retention-days: 30
           
-      - name: 🧼 Run Black (format check)
-        run: |
-          cd auth_service
-          black . --check --diff
           
       - name: 🔍 Run Ruff (lint and format check)
         run: |
