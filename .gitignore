@@ -1,3 +1,34 @@
-/food-fast-ecommerce/
+# Ignore Python virtual environments
+venv/
+
+# Ignore Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore test, coverage, and build artifacts
+.coverage
+htmlcov/
+dist/
+build/
+.eggs/
+*.egg-info/
+
+# Ignore environment and secret files
 .env
+.env.*
+*.env
+
+# Ignore IDE/project files
+.idea/
+*.iml
+*.sublime-workspace
+*.sublime-project
+.vscode/
+
+# Ignore Qodana config
 qodana.yaml
+
+# Allow everything else (including food-fast-ecommerce and its subfolders)
+!food-fast-ecommerce/
