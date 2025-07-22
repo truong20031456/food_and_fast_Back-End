@@ -1,1 +1,6 @@
-# User Service Main
+from fastapi import FastAPI
+from app.controllers.user_router import router as user_router
+
+app = FastAPI(title="User Service")
+
+app.include_router(user_router)
