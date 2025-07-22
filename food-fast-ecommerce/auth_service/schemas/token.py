@@ -44,7 +44,9 @@ class TokenData(BaseModel):
 class TokenRefresh(BaseModel):
     """Token refresh request schema"""
 
-    refresh_token: str = Field(..., description="Refresh token to use for getting new access token")
+    refresh_token: str = Field(
+        ..., description="Refresh token to use for getting new access token"
+    )
 
 
 class TokenValidation(BaseModel):

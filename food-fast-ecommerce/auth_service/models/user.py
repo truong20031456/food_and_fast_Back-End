@@ -120,9 +120,9 @@ class User(BaseModel):
             "is_phone_verified": self.is_phone_verified,
             "is_active": self.is_active,
             "is_locked": self.is_locked,
-            "last_login_at": self.last_login_at.isoformat()
-            if self.last_login_at
-            else None,
+            "last_login_at": (
+                self.last_login_at.isoformat() if self.last_login_at else None
+            ),
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
             "roles": [role.name for role in self.roles],  # Include role names
