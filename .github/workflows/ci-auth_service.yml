@@ -44,10 +44,10 @@ jobs:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
         
-      - name: 🐍 Set up Python 3.13.5
+      - name: 🐍 Set up Python 3.11
         uses: actions/setup-python@v4
         with:
-          python-version: '3.13.5'
+          python-version: '3.11'
           
       - name: 📦 Cache pip dependencies
         uses: actions/cache@v4
@@ -81,7 +81,11 @@ jobs:
           cd auth_service
           python -c "
           from core.database import engine, Base
-          Base.metadata.create_all(bind=engine)
+          import asyncio
+          async def create():
+            async with engine.begin() as conn:
+              await conn.run_sync(Base.metadata.create_all)
+          asyncio.run(create())
           print('Database tables created successfully')
           "
           
@@ -99,7 +103,6 @@ jobs:
             auth_service/coverage.xml
             auth_service/htmlcov/
           retention-days: 30
-          
           
       - name: 🔍 Run Ruff (lint and format check)
         run: |
@@ -159,8 +162,6 @@ jobs:
       - name: 🚀 Deploy to staging
         run: |
           echo "Deploying auth service to staging environment..."
-          # Add your staging deployment commands here
-          # Example: kubectl apply -f k8s/staging/auth-service.yaml
 
   deploy-production:
     name: Deploy to Production
@@ -172,5 +173,3 @@ jobs:
       - name: 🚀 Deploy to production
         run: |
           echo "Deploying auth service to production environment..."
-          # Add your production deployment commands here
-          # Example: kubectl apply -f k8s/production/auth-service.yaml
