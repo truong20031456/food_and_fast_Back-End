@@ -1,0 +1,70 @@
+# FastAPI Core
+fastapi
+uvicorn[standard]
+alembic
+# Authentication & Security
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart
+bcrypt
+Pillow  # for image processing
+
+# Database
+SQLAlchemy
+alembic
+asyncpg  # PostgreSQL async driver
+psycopg2-binary  # PostgreSQL sync driver
+
+# Redis for caching/sessions
+redis
+aioredis
+
+# Environment & Configuration
+python-dotenv
+pydantic
+pydantic-settings
+
+# HTTP Client
+httpx
+aiohttp
+
+# Email
+fastapi-mail
+
+# Validation & Serialization
+email-validator
+phonenumbers
+
+# Logging
+structlog
+
+# Testing
+pytest
+pytest-asyncio
+pytest-cov
+httpx  # for testing
+
+# Development
+black
+flake8
+mypy
+pre-commit
+
+# Monitoring (optional)
+prometheus-client
+sentry-sdk[fastapi]
+
+# CORS
+fastapi-cors
+
+# Rate Limiting
+slowapi
+
+# JWT handling
+PyJWT
+
+# Time handling
+python-dateutil
+pytz
+
+ruff
