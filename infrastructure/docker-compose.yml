@@ -270,12 +270,77 @@ services:
       - food_fast_network
     restart: unless-stopped
 
+  # PostgreSQL Exporter for database metrics
+  postgres_exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: food_fast_postgres_exporter
+    ports:
+      - "9187:9187"
+    environment:
+      DATA_SOURCE_NAME: "postgresql://admin:password@postgres:5432/food_fast?sslmode=disable"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - food_fast_network
+    restart: unless-stopped
+
+  # Redis Exporter for cache metrics
+  redis_exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: food_fast_redis_exporter
+    ports:
+      - "9121:9121"
+    environment:
+      REDIS_ADDR: "redis://redis:6379"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - food_fast_network
+    restart: unless-stopped
+
+  # Node Exporter for system metrics
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: food_fast_node_exporter
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - food_fast_network
+    restart: unless-stopped
+
+  # Alertmanager for alerting
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: food_fast_alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      - alertmanager_data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    networks:
+      - food_fast_network
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   redis_data:
   elasticsearch_data:
   prometheus_data:
   grafana_data:
+  alertmanager_data:
 
 networks:
   food_fast_network:

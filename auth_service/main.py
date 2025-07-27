@@ -33,3 +33,8 @@ app.include_router(user_router, prefix="/users", tags=["User Management"])
 app.include_router(token_router, prefix="/tokens", tags=["Token Management"])
 app.include_router(password_router, prefix="/passwords", tags=["Password Management"])
 app.include_router(profile_router, prefix="/profile", tags=["Profile Management"])
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return {"status": "healthy", "service": "auth_service"}

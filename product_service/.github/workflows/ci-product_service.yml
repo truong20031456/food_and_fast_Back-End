@@ -1,0 +1,317 @@
+name: Product Service CI/CD
+
+on:
+  push:
+    paths:
+      - 'product_service/**'
+    branches: [feature/product_service]
+  pull_request:
+    paths:
+      - 'product_service/**'
+
+env:
+  PYTHON_VERSION: '3.11'
+  SERVICE_NAME: product-service
+  SERVICE_PORT: 8003
+
+jobs:
+  lint:
+    name: Lint and Format Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python ${{ env.PYTHON_VERSION }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('product_service/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+          
+    - name: Install dependencies
+      working-directory: product_service
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: Run Black (code formatting)
+      working-directory: product_service
+      run: |
+        black --check --diff .
+        
+    - name: Run Flake8 (linting)
+      working-directory: product_service
+      run: |
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=88 --statistics
+        
+    - name: Run MyPy (type checking)
+      working-directory: product_service
+      run: |
+        mypy . --ignore-missing-imports
+
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_product_service_db
+          POSTGRES_USER: test_user
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+          
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python ${{ env.PYTHON_VERSION }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('product_service/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+          
+    - name: Install dependencies
+      working-directory: product_service
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: Create test environment file
+      working-directory: product_service
+      run: |
+        cat > .env.test << EOF
+        DATABASE_URL=postgresql+asyncpg://test_user:postgres@localhost:5432/test_product_service_db
+        REDIS_URL=redis://localhost:6379/1
+        DEBUG=true
+        EOF
+        
+    - name: Wait for PostgreSQL
+      run: |
+        until pg_isready -h localhost -p 5432 -U test_user; do
+          echo "Waiting for PostgreSQL..."
+          sleep 2
+        done
+        
+    - name: Wait for Redis
+      run: |
+        until redis-cli -h localhost ping; do
+          echo "Waiting for Redis..."
+          sleep 2
+        done
+        
+    - name: Run tests with pytest
+      working-directory: product_service
+      env:
+        DATABASE_URL: postgresql+asyncpg://test_user:postgres@localhost:5432/test_product_service_db
+        REDIS_URL: redis://localhost:6379/1
+        DEBUG: true
+      run: |
+        pytest -v --cov=. --cov-report=xml --cov-report=term-missing
+        
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: product_service/coverage.xml
+        flags: product-service
+        name: product-service-coverage
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python ${{ env.PYTHON_VERSION }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        
+    - name: Install dependencies
+      working-directory: product_service
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: Run Bandit security linter
+      working-directory: product_service
+      run: |
+        pip install bandit
+        bandit -r . -f json -o bandit-report.json || true
+        bandit -r . -f txt -o bandit-report.txt || true
+        
+    - name: Run Safety check
+      working-directory: product_service
+      run: |
+        pip install safety
+        safety check --json --output safety-report.json || true
+        safety check --text --output safety-report.txt || true
+
+  docker-build:
+    name: Docker Build Test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Build Docker image
+      working-directory: product_service
+      run: |
+        docker build -t ${{ env.SERVICE_NAME }}:test .
+        
+    - name: Test Docker image
+      working-directory: product_service
+      run: |
+        # Test that the image can be created and contains expected files
+        docker run --rm ${{ env.SERVICE_NAME }}:test python -c "import fastapi; print('FastAPI import successful')"
+        docker run --rm ${{ env.SERVICE_NAME }}:test python -c "import sqlalchemy; print('SQLAlchemy import successful')"
+
+  integration-test:
+    name: Integration Test
+    runs-on: ubuntu-latest
+    needs: [lint, test, security, docker-build]
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_product_service_db
+          POSTGRES_USER: test_user
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+          
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Build and run service
+      working-directory: product_service
+      run: |
+        docker build -t ${{ env.SERVICE_NAME }}:test .
+        docker run -d \
+          --name ${{ env.SERVICE_NAME }}-test \
+          -p ${{ env.SERVICE_PORT }}:${{ env.SERVICE_PORT }} \
+          -e DATABASE_URL=postgresql+asyncpg://test_user:postgres@host.docker.internal:5432/test_product_service_db \
+          -e REDIS_URL=redis://host.docker.internal:6379/1 \
+          -e DEBUG=true \
+          ${{ env.SERVICE_NAME }}:test
+          
+    - name: Wait for service to start
+      run: |
+        sleep 10
+        
+    - name: Test health endpoint
+      run: |
+        curl -f http://localhost:${{ env.SERVICE_PORT }}/health || exit 1
+        
+    - name: Test API documentation
+      run: |
+        curl -f http://localhost:${{ env.SERVICE_PORT }}/docs || exit 1
+        
+    - name: Cleanup
+      if: always()
+      run: |
+        docker stop ${{ env.SERVICE_NAME }}-test || true
+        docker rm ${{ env.SERVICE_NAME }}-test || true
+
+  build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: [lint, test, security, docker-build, integration-test]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🐳 Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: 🐳 Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./product_service
+        push: true
+        tags: |
+          truongcaovan/product_service:latest
+          truongcaovan/product_service:${{ github.sha }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        platforms: linux/amd64,linux/arm64
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/develop'
+    
+    steps:
+    - name: 🚀 Deploy to staging
+      run: |
+        echo "Deploying product service to staging environment..."
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: 🚀 Deploy to production
+      run: |
+        echo "Deploying product service to production environment..."
