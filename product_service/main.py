@@ -5,7 +5,7 @@ from typing import List, Optional
 import logging
 from contextlib import asynccontextmanager
 
-from core.database import engine, Base
+from core.database import engine, Base, init_db, close_db
 from core.config import settings
 from controllers import (
     product_router,
@@ -21,11 +21,12 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create tables if they don't exist
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    # Initialize database
+    await init_db()
     logger.info("Product Service started successfully")
     yield
+    # Close database connections
+    await close_db()
     logger.info("Product Service shutting down...")
 
 app = FastAPI(

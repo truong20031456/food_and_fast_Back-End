@@ -13,3 +13,13 @@ pytest
 pydantic
 passlib[bcrypt]
 redis
+# Test dependencies
+pytest-asyncio
+pytest-cov
+httpx
+# Linting and formatting
+black
+flake8
+mypy
+bandit
+safety
