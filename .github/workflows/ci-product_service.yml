@@ -2,11 +2,11 @@ name: Product Service CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ feature/product_service ]
     paths:
       - 'product_service/**'
   pull_request:
-    branches: [ main, develop ]
+    branches: [ feature/product_service ]
     paths:
       - 'product_service/**'
 
