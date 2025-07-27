@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from passlib.context import CryptContext
 from schemas.auth import LoginRequest, RegisterRequest, LoginResponse
-from core.security import create_access_token, create_refresh_token
+from utils.security import create_access_token, create_refresh_token
 from core.config import settings
 from services.user_service import UserService
 from services.token_service import TokenService

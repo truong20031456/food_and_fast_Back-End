@@ -41,6 +41,29 @@ def create_access_token(user: dict, expires_delta: Optional[timedelta] = None) -
     return encoded_jwt
 
 
+def create_refresh_token(user: dict, expires_delta: Optional[timedelta] = None) -> str:
+    """Create a refresh token for a user"""
+    to_encode = {
+        "sub": str(user["id"]),
+        "id": user["id"],
+        "username": user.get("username"),
+        "email": user.get("email"),
+        "token_type": "refresh"
+    }
+    if expires_delta:
+        expire = datetime.now(UTC) + expires_delta
+    else:
+        expire = datetime.now(UTC) + timedelta(
+            days=settings.REFRESH_TOKEN_EXPIRE_DAYS
+        )
+    to_encode.update({"exp": expire})
+
+    encoded_jwt = jwt.encode(
+        to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
+    )
+    return encoded_jwt
+
+
 def decode_access_token(token: str) -> Optional[dict]:
     """Decode an access token and return its payload"""
     try:

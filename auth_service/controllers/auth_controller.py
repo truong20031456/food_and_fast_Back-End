@@ -9,7 +9,7 @@ from schemas.auth import (
     LoginResponse,
 )  # Use RegisterRequest, LoginRequest
 from schemas.user import UserRead  # For response model
-from schemas.common import MessageResponse
+from schemas.auth import MessageResponse
 
 from services.auth_service import AuthService
 from services.user_service import UserService
