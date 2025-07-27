@@ -14,41 +14,19 @@ jobs:
   test:
     name: Test Auth Service
     runs-on: ubuntu-latest
-    
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_PASSWORD: test_password
-          POSTGRES_USER: test_user
-          POSTGRES_DB: test_auth_db
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-      
-      redis:
-        image: redis:7-alpine
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
-
+    if: github.ref == 'refs/heads/feature/auth_service'
     steps:
+      # Checkout the code
       - name: 📥 Checkout code
         uses: actions/checkout@v4
-        
+
+      # Set up Python 3.11
       - name: 🐍 Set up Python 3.11
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-          
+
+      # Cache pip dependencies
       - name: 📦 Cache pip dependencies
         uses: actions/cache@v4
         with:
@@ -56,7 +34,8 @@ jobs:
           key: ${{ runner.os }}-pip-${{ hashFiles('auth_service/requirements*.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-
-          
+
+      # Install dependencies
       - name: 📦 Install dependencies
         run: |
           cd auth_service
@@ -66,7 +45,8 @@ jobs:
             pip install -r dev-requirements.txt
           fi
           pip install pytest pytest-asyncio pytest-cov httpx
-         
+
+      # Set up environment variables
       - name: 🔧 Set up environment variables
         run: |
           echo "DATABASE_URL=postgresql://test_user:test_password@localhost:5432/test_auth_db" >> $GITHUB_ENV
@@ -75,7 +55,8 @@ jobs:
           echo "ALGORITHM=HS256" >> $GITHUB_ENV
           echo "ACCESS_TOKEN_EXPIRE_MINUTES=30" >> $GITHUB_ENV
           echo "REFRESH_TOKEN_EXPIRE_DAYS=7" >> $GITHUB_ENV
-          
+
+      # Initialize database
       - name: 🗄️ Initialize database
         run: |
           cd auth_service
@@ -88,12 +69,14 @@ jobs:
           asyncio.run(create())
           print('Database tables created successfully')
           "
-          
+
+      # Run Unit Tests
       - name: ✅ Run Unit Tests
         run: |
           cd auth_service
           pytest tests/ -v --tb=short --cov=. --cov-report=term-missing --cov-report=xml --cov-report=html
-          
+
+      # Upload Coverage Report
       - name: 📊 Upload Coverage Report
         uses: actions/upload-artifact@v4
         if: always()
@@ -103,20 +86,23 @@ jobs:
             auth_service/coverage.xml
             auth_service/htmlcov/
           retention-days: 30
-          
+
+      # Run Ruff (lint and format check)
       - name: 🔍 Run Ruff (lint and format check)
         run: |
           cd auth_service
           ruff check .
           ruff format --check
-          
+
+      # Run Security Checks
       - name: 🔒 Run Security Checks
         run: |
           cd auth_service
           pip install bandit safety
           bandit -r . -f json -o bandit-report.json || true
           safety check --json --output safety-report.json || true
-          
+
+      # Upload Security Reports
       - name: 📋 Upload Security Reports
         uses: actions/upload-artifact@v4
         if: always()
@@ -127,19 +113,27 @@ jobs:
             auth_service/safety-report.json
           retention-days: 30
 
+      # Clean up temporary files
+      - name: 🧹 Clean up
+        run: |
+          cd auth_service
+          rm -rf htmlcov coverage.xml bandit-report.json safety-report.json
+
   build:
     name: Build Docker Image
     runs-on: ubuntu-latest
     needs: test
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
-    
     steps:
+      # Checkout the code
       - name: 📥 Checkout code
         uses: actions/checkout@v4
-        
+
+      # Set up Docker Buildx
       - name: 🐳 Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        
+
+      # Build and push Docker image
       - name: 🐳 Build and push Docker image
         uses: docker/build-push-action@v5
         with:
@@ -157,8 +151,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     if: github.ref == 'refs/heads/develop'
-    
     steps:
+      # Deploy to staging
       - name: 🚀 Deploy to staging
         run: |
           echo "Deploying auth service to staging environment..."
@@ -168,8 +162,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     if: github.ref == 'refs/heads/main'
-    
     steps:
+      # Deploy to production
       - name: 🚀 Deploy to production
         run: |
           echo "Deploying auth service to production environment..."

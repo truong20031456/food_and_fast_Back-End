@@ -14,15 +14,17 @@ import json
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+from config.settings import settings
+
 # Service registry
 SERVICES = {
-    "auth": "http://localhost:8001",
-    "user": "http://localhost:8002", 
-    "product": "http://localhost:8003",
-    "order": "http://localhost:8004",
-    "payment": "http://localhost:8005",
-    "notification": "http://localhost:8006",
-    "analytics": "http://localhost:8007"
+    "auth": settings.AUTH_SERVICE_URL,
+    "user": settings.USER_SERVICE_URL, 
+    "product": settings.PRODUCT_SERVICE_URL,
+    "order": settings.ORDER_SERVICE_URL,
+    "payment": settings.PAYMENT_SERVICE_URL,
+    "notification": settings.NOTIFICATION_SERVICE_URL,
+    "analytics": settings.ANALYTICS_SERVICE_URL
 }
 
 # Route mappings
@@ -71,8 +73,8 @@ app.add_middleware(
 )
 
 class RateLimiter:
-    def __init__(self, requests_per_minute: int = 100):
-        self.requests_per_minute = requests_per_minute
+    def __init__(self, requests_per_minute: int = None):
+        self.requests_per_minute = requests_per_minute or settings.RATE_LIMIT_PER_MINUTE
         self.requests = {}
     
     def is_allowed(self, client_ip: str) -> bool:
@@ -105,7 +107,7 @@ async def get_client_ip(request: Request) -> str:
 async def check_service_health(service_name: str, service_url: str) -> bool:
     """Check if a service is healthy"""
     try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
+        async with httpx.AsyncClient(timeout=settings.HEALTH_CHECK_TIMEOUT) as client:
             response = await client.get(f"{service_url}/health")
             return response.status_code == 200
     except Exception as e:
@@ -156,7 +158,7 @@ async def forward_request(request: Request, service_url: str) -> JSONResponse:
         target_url += f"?{request.url.query}"
     
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=settings.REQUEST_TIMEOUT) as client:
             response = await client.request(
                 method=request.method,
                 url=target_url,
@@ -239,4 +241,4 @@ async def proxy_request(request: Request, path: str):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host=settings.HOST, port=settings.PORT)
