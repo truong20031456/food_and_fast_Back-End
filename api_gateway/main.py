@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 import httpx
 import asyncio
 from typing import Dict, List
@@ -9,10 +9,37 @@ import logging
 from contextlib import asynccontextmanager
 import time
 import json
+from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
+from prometheus_client.openmetrics.exposition import generate_latest as generate_latest_openmetrics
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Prometheus metrics
+REQUEST_COUNT = Counter(
+    'http_requests_total',
+    'Total HTTP requests',
+    ['method', 'endpoint', 'status']
+)
+
+REQUEST_DURATION = Histogram(
+    'http_request_duration_seconds',
+    'HTTP request duration in seconds',
+    ['method', 'endpoint']
+)
+
+ACTIVE_REQUESTS = Gauge(
+    'http_requests_in_progress',
+    'Number of HTTP requests currently in progress',
+    ['method', 'endpoint']
+)
+
+SERVICE_HEALTH = Gauge(
+    'service_health_status',
+    'Health status of downstream services',
+    ['service_name']
+)
 
 from config.settings import settings
 
@@ -127,6 +154,8 @@ async def check_all_services_health():
             "healthy": is_healthy,
             "timestamp": time.time()
         }
+        # Update Prometheus metrics
+        SERVICE_HEALTH.labels(service_name=service_name).set(1 if is_healthy else 0)
         status = "healthy" if is_healthy else "unhealthy"
         logger.info(f"Service {service_name}: {status}")
 
@@ -194,21 +223,41 @@ async def rate_limit_middleware(request: Request, call_next):
     return response
 
 @app.middleware("http")
-async def logging_middleware(request: Request, call_next):
-    """Logging middleware"""
+async def metrics_middleware(request: Request, call_next):
+    """Metrics and logging middleware"""
     start_time = time.time()
     
-    response = await call_next(request)
+    # Increment active requests
+    ACTIVE_REQUESTS.labels(method=request.method, endpoint=request.url.path).inc()
     
-    process_time = time.time() - start_time
-    client_ip = await get_client_ip(request)
+    try:
+        response = await call_next(request)
+        
+        process_time = time.time() - start_time
+        client_ip = await get_client_ip(request)
+        
+        # Record metrics
+        REQUEST_COUNT.labels(
+            method=request.method,
+            endpoint=request.url.path,
+            status=response.status_code
+        ).inc()
+        
+        REQUEST_DURATION.labels(
+            method=request.method,
+            endpoint=request.url.path
+        ).observe(process_time)
+        
+        logger.info(
+            f"{client_ip} - {request.method} {request.url.path} - "
+            f"{response.status_code} - {process_time:.4f}s"
+        )
+        
+        return response
     
-    logger.info(
-        f"{client_ip} - {request.method} {request.url.path} - "
-        f"{response.status_code} - {process_time:.4f}s"
-    )
-    
-    return response
+    finally:
+        # Decrement active requests
+        ACTIVE_REQUESTS.labels(method=request.method, endpoint=request.url.path).dec()
 
 @app.get("/health")
 async def health_check():
@@ -218,6 +267,14 @@ async def health_check():
         "timestamp": time.time(),
         "services": service_health_cache
     }
+
+@app.get("/metrics")
+async def metrics():
+    """Prometheus metrics endpoint"""
+    return Response(
+        generate_latest(),
+        media_type=CONTENT_TYPE_LATEST
+    )
 
 @app.get("/services")
 async def list_services():
