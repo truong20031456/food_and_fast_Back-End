@@ -5,10 +5,6 @@ on:
     branches: [ feature/product_service ]
     paths:
       - 'product_service/**'
-  pull_request:
-    branches: [ feature/product_service ]
-    paths:
-      - 'product_service/**'
 
 env:
   PYTHON_VERSION: '3.11'
