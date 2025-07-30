@@ -72,3 +72,6 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp 
+
+# Ignore Claude AI settings
+.claude/
