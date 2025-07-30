@@ -9,7 +9,12 @@ from sqlalchemy.orm import selectinload
 
 from models.product import Product
 from models.category import Category
-from schemas.product import ProductCreate, ProductUpdate, ProductRead, ProductListResponse
+from schemas.product import (
+    ProductCreate,
+    ProductUpdate,
+    ProductRead,
+    ProductListResponse,
+)
 from schemas.category import CategoryCreate, CategoryUpdate, CategoryRead
 
 
@@ -30,25 +35,21 @@ class CatalogService:
 
     async def get_product(self, product_id: int) -> Optional[ProductRead]:
         """Get product by ID"""
-        result = await self.db.execute(
-            select(Product).where(Product.id == product_id)
-        )
+        result = await self.db.execute(select(Product).where(Product.id == product_id))
         product = result.scalar_one_or_none()
         return ProductRead.from_orm(product) if product else None
 
     async def get_product_by_slug(self, slug: str) -> Optional[ProductRead]:
         """Get product by slug"""
-        result = await self.db.execute(
-            select(Product).where(Product.slug == slug)
-        )
+        result = await self.db.execute(select(Product).where(Product.slug == slug))
         product = result.scalar_one_or_none()
         return ProductRead.from_orm(product) if product else None
 
-    async def update_product(self, product_id: int, product_data: ProductUpdate) -> Optional[ProductRead]:
+    async def update_product(
+        self, product_id: int, product_data: ProductUpdate
+    ) -> Optional[ProductRead]:
         """Update product"""
-        result = await self.db.execute(
-            select(Product).where(Product.id == product_id)
-        )
+        result = await self.db.execute(select(Product).where(Product.id == product_id))
         product = result.scalar_one_or_none()
         if not product:
             return None
@@ -63,9 +64,7 @@ class CatalogService:
 
     async def delete_product(self, product_id: int) -> bool:
         """Delete product"""
-        result = await self.db.execute(
-            select(Product).where(Product.id == product_id)
-        )
+        result = await self.db.execute(select(Product).where(Product.id == product_id))
         product = result.scalar_one_or_none()
         if not product:
             return False
@@ -82,7 +81,7 @@ class CatalogService:
         search: Optional[str] = None,
         min_price: Optional[float] = None,
         max_price: Optional[float] = None,
-        is_active: Optional[bool] = None
+        is_active: Optional[bool] = None,
     ) -> ProductListResponse:
         """List products with filters"""
         query = select(Product).options(selectinload(Product.category))
@@ -95,7 +94,7 @@ class CatalogService:
             conditions.append(
                 or_(
                     Product.name.ilike(f"%{search}%"),
-                    Product.description.ilike(f"%{search}%")
+                    Product.description.ilike(f"%{search}%"),
                 )
             )
         if min_price is not None:
@@ -112,7 +111,7 @@ class CatalogService:
         count_query = select(func.count(Product.id))
         if conditions:
             count_query = count_query.where(and_(*conditions))
-        
+
         total_result = await self.db.execute(count_query)
         total = total_result.scalar()
 
@@ -125,7 +124,7 @@ class CatalogService:
             products=[ProductRead.from_orm(product) for product in products],
             total=total,
             skip=skip,
-            limit=limit
+            limit=limit,
         )
 
     # Category methods
@@ -147,13 +146,13 @@ class CatalogService:
 
     async def get_category_by_slug(self, slug: str) -> Optional[CategoryRead]:
         """Get category by slug"""
-        result = await self.db.execute(
-            select(Category).where(Category.slug == slug)
-        )
+        result = await self.db.execute(select(Category).where(Category.slug == slug))
         category = result.scalar_one_or_none()
         return CategoryRead.from_orm(category) if category else None
 
-    async def update_category(self, category_id: int, category_data: CategoryUpdate) -> Optional[CategoryRead]:
+    async def update_category(
+        self, category_id: int, category_data: CategoryUpdate
+    ) -> Optional[CategoryRead]:
         """Update category"""
         result = await self.db.execute(
             select(Category).where(Category.id == category_id)
@@ -183,12 +182,14 @@ class CatalogService:
         await self.db.commit()
         return True
 
-    async def list_categories(self, parent_id: Optional[int] = None) -> List[CategoryRead]:
+    async def list_categories(
+        self, parent_id: Optional[int] = None
+    ) -> List[CategoryRead]:
         """List categories"""
         query = select(Category)
         if parent_id is not None:
             query = query.where(Category.parent_id == parent_id)
-        
+
         result = await self.db.execute(query)
         categories = result.scalars().all()
         return [CategoryRead.from_orm(category) for category in categories]
