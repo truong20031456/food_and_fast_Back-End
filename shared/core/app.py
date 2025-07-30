@@ -20,9 +20,15 @@ from datetime import datetime
 from .config import BaseServiceSettings
 from .database import init_database, get_database_manager
 from .exceptions import BaseServiceException, create_http_exception
-from ..utils.redis import init_redis, get_redis_manager
-from ..utils.logging import setup_logging, log_request
-from ..models.base import HealthResponse
+try:
+    from ..utils.redis import init_redis, get_redis_manager
+    from ..utils.logging import setup_logging, log_request
+    from ..models.base import HealthResponse
+except ImportError:
+    # Fall back to absolute imports for services
+    from shared.utils.redis import init_redis, get_redis_manager
+    from shared.utils.logging import setup_logging, log_request
+    from shared.models.base import HealthResponse
 
 logger = logging.getLogger(__name__)
 
