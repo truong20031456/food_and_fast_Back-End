@@ -6,8 +6,8 @@ from .search_controller import router as search_router
 
 __all__ = [
     "product_router",
-    "category_router", 
+    "category_router",
     "inventory_router",
     "review_router",
-    "search_router"
-] 
+    "search_router",
+]

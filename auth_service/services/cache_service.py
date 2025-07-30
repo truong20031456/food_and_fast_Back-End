@@ -26,12 +26,16 @@ class CacheService:
             logger.error(f"Failed to get from cache: {e}")
             return None
 
-    async def set(self, key: str, value: Any, expire: Optional[timedelta] = None) -> bool:
+    async def set(
+        self, key: str, value: Any, expire: Optional[timedelta] = None
+    ) -> bool:
         """Set value in cache"""
         try:
             serialized_value = json.dumps(value)
             if expire:
-                await self.redis_client.setex(key, int(expire.total_seconds()), serialized_value)
+                await self.redis_client.setex(
+                    key, int(expire.total_seconds()), serialized_value
+                )
             else:
                 await self.redis_client.set(key, serialized_value)
             return True
@@ -70,4 +74,4 @@ class CacheService:
             return await self.redis_client.expire(key, seconds)
         except Exception as e:
             logger.error(f"Failed to set cache expiration: {e}")
-            return False 
+            return False

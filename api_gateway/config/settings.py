@@ -5,7 +5,7 @@ import sys
 import os
 
 # Add shared modules to path
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'shared'))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "shared"))
 
 from core.config import get_service_settings
 
@@ -14,7 +14,6 @@ settings = get_service_settings(
     "api_gateway",
     # Override specific defaults for API Gateway
     SECRET_KEY=os.getenv("API_GATEWAY_SECRET_KEY", "change-this-in-production"),
-    
     DATABASE_URL="sqlite+aiosqlite:///./api_gateway.db",  # Optional local DB for gateway
 )
 

@@ -22,9 +22,7 @@ test_engine = create_async_engine(
 
 # Create test session factory
 TestingSessionLocal = async_sessionmaker(
-    test_engine,
-    class_=AsyncSession,
-    expire_on_commit=False
+    test_engine, class_=AsyncSession, expire_on_commit=False
 )
 
 
@@ -57,15 +55,15 @@ async def db_session(test_db_setup) -> AsyncGenerator[AsyncSession, None]:
 @pytest.fixture
 async def client(db_session: AsyncSession) -> AsyncGenerator[TestClient, None]:
     """Get test client with overridden database dependency."""
-    
+
     async def override_get_db():
         yield db_session
-    
+
     app.dependency_overrides[get_db] = override_get_db
-    
+
     with TestClient(app) as test_client:
         yield test_client
-    
+
     app.dependency_overrides.clear()
 
 
@@ -82,7 +80,7 @@ def sample_product_data():
         "sku": "TEST-001",
         "is_featured": False,
         "is_published": True,
-        "is_virtual": False
+        "is_virtual": False,
     }
 
 
@@ -93,7 +91,7 @@ def sample_category_data():
         "name": "Test Category",
         "slug": "test-category",
         "description": "A test category for testing",
-        "sort_order": 1
+        "sort_order": 1,
     }
 
 
@@ -105,7 +103,7 @@ def sample_inventory_data():
         "quantity": 100,
         "reserved_quantity": 0,
         "low_stock_threshold": 10,
-        "location": "Warehouse A"
+        "location": "Warehouse A",
     }
 
 
@@ -118,5 +116,5 @@ def sample_review_data():
         "rating": 4.5,
         "title": "Great product!",
         "comment": "This is a great test product.",
-        "is_verified_purchase": True
-    } 
+        "is_verified_purchase": True,
+    }

@@ -22,8 +22,11 @@ class TokenService:
             key = f"refresh_token:{refresh_token}"
             await self.redis_client.setex(
                 key,
-                settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,  # Convert days to seconds
-                str(user_id)
+                settings.REFRESH_TOKEN_EXPIRE_DAYS
+                * 24
+                * 60
+                * 60,  # Convert days to seconds
+                str(user_id),
             )
             return True
         except Exception as e:
@@ -57,12 +60,12 @@ class TokenService:
             # In production, you might want to store user_id -> token mappings
             pattern = f"refresh_token:*"
             keys = await self.redis_client.keys(pattern)
-            
+
             for key in keys:
                 token_user_id = await self.redis_client.get(key)
                 if token_user_id and int(token_user_id) == user_id:
                     await self.redis_client.delete(key)
-            
+
             return True
         except Exception as e:
             logger.error(f"Failed to invalidate all user tokens: {e}")
@@ -75,11 +78,8 @@ class TokenService:
             user_id = await self.redis_client.get(key)
             if user_id:
                 ttl = await self.redis_client.ttl(key)
-                return {
-                    "user_id": int(user_id),
-                    "expires_in": ttl
-                }
+                return {"user_id": int(user_id), "expires_in": ttl}
             return None
         except Exception as e:
             logger.error(f"Failed to get token info: {e}")
-            return None 
+            return None

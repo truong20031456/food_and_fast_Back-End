@@ -13,9 +13,7 @@ engine = create_async_engine(
 
 # Create async session factory
 AsyncSessionLocal = async_sessionmaker(
-    engine,
-    class_=AsyncSession,
-    expire_on_commit=False
+    engine, class_=AsyncSession, expire_on_commit=False
 )
 
 # Create declarative base
@@ -42,4 +40,4 @@ async def init_db():
 
 async def close_db():
     """Close database connections"""
-    await engine.dispose() 
+    await engine.dispose()

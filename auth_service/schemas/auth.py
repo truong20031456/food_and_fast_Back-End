@@ -5,8 +5,11 @@ from datetime import datetime
 
 class RegisterRequest(BaseModel):
     """User registration request schema"""
+
     email: EmailStr = Field(..., description="User email address")
-    username: Optional[str] = Field(None, min_length=3, max_length=50, description="Username")
+    username: Optional[str] = Field(
+        None, min_length=3, max_length=50, description="Username"
+    )
     password: str = Field(..., min_length=8, description="Password")
     confirm_password: str = Field(..., description="Password confirmation")
     first_name: Optional[str] = Field(None, max_length=100, description="First name")
@@ -23,12 +26,14 @@ class RegisterRequest(BaseModel):
 
 class LoginRequest(BaseModel):
     """User login request schema"""
+
     email: EmailStr = Field(..., description="User email address")
     password: str = Field(..., min_length=8, description="Password")
 
 
 class LoginResponse(BaseModel):
     """User login response schema"""
+
     access_token: str = Field(..., description="Access token")
     refresh_token: str = Field(..., description="Refresh token")
     token_type: str = Field("bearer", description="Token type")
@@ -37,11 +42,13 @@ class LoginResponse(BaseModel):
 
 class MessageResponse(BaseModel):
     """Generic message response schema"""
+
     message: str = Field(..., description="Response message")
 
 
 class CommonResponse(BaseModel):
     """Common response schema"""
+
     success: bool = Field(..., description="Success status")
     message: str = Field(..., description="Response message")
-    data: Optional[Dict[str, Any]] = Field(None, description="Response data") 
+    data: Optional[Dict[str, Any]] = Field(None, description="Response data")

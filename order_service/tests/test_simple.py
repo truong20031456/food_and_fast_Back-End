@@ -20,6 +20,7 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 # Create tables
 Base.metadata.create_all(bind=engine)
 
+
 def override_get_db():
     try:
         db = TestingSessionLocal()
@@ -27,7 +28,9 @@ def override_get_db():
     finally:
         db.close()
 
+
 app.dependency_overrides[get_db] = override_get_db
+
 
 @pytest.fixture(autouse=True)
 def clean_database():
@@ -38,6 +41,7 @@ def clean_database():
     Base.metadata.create_all(bind=engine)
     yield
 
+
 def test_health_check():
     """Test health check endpoint"""
     client = TestClient(app)
@@ -47,6 +51,7 @@ def test_health_check():
     assert data["status"] == "healthy"
     assert data["service"] == "order-service"
 
+
 def test_root_endpoint():
     """Test root endpoint"""
     client = TestClient(app)
@@ -54,4 +59,4 @@ def test_root_endpoint():
     assert response.status_code == 200
     data = response.json()
     assert data["message"] == "Food Fast Order Service"
-    assert data["status"] == "running" 
+    assert data["status"] == "running"

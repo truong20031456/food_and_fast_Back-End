@@ -12,12 +12,13 @@ from controllers import (
     category_router,
     inventory_router,
     review_router,
-    search_router
+    search_router,
 )
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -29,11 +30,12 @@ async def lifespan(app: FastAPI):
     await close_db()
     logger.info("Product Service shutting down...")
 
+
 app = FastAPI(
     title="Product Service",
     description="FastAPI Product Service for Food & Fast E-Commerce",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # CORS middleware
@@ -52,29 +54,20 @@ app.include_router(inventory_router, prefix="/inventory", tags=["Inventory"])
 app.include_router(review_router, prefix="/reviews", tags=["Reviews"])
 app.include_router(search_router, prefix="/search", tags=["Search"])
 
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
-    return {
-        "status": "healthy",
-        "service": "product-service",
-        "version": "1.0.0"
-    }
+    return {"status": "healthy", "service": "product-service", "version": "1.0.0"}
+
 
 @app.get("/")
 async def root():
     """Root endpoint"""
-    return {
-        "message": "Product Service API",
-        "version": "1.0.0",
-        "docs": "/docs"
-    }
+    return {"message": "Product Service API", "version": "1.0.0", "docs": "/docs"}
+
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(
-        app, 
-        host=settings.HOST, 
-        port=settings.PORT,
-        log_level="info"
-    )
+
+    uvicorn.run(app, host=settings.HOST, port=settings.PORT, log_level="info")

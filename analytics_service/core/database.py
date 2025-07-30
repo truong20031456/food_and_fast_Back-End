@@ -1,6 +1,7 @@
 """
 Database Management - Analytics Service.
 """
+
 import asyncio
 from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
@@ -9,7 +10,9 @@ from core.config import settings
 
 # Create async engine
 engine = create_async_engine(
-    settings.database.connection_string.replace("postgresql://", "postgresql+asyncpg://"),
+    settings.database.connection_string.replace(
+        "postgresql://", "postgresql+asyncpg://"
+    ),
     echo=settings.debug,
     pool_pre_ping=True,
     pool_recycle=300,
@@ -51,21 +54,21 @@ async def close_db():
 
 class DatabaseManager:
     """Database manager for analytics service."""
-    
+
     def __init__(self):
         self.engine = engine
         self.session_factory = AsyncSessionLocal
-    
+
     async def get_session(self) -> AsyncSession:
         """Get a new database session."""
         return self.session_factory()
-    
+
     async def execute_query(self, query: str, params: dict = None):
         """Execute a raw SQL query."""
         async with self.get_session() as session:
             result = await session.execute(query, params or {})
             return result.fetchall()
-    
+
     async def health_check(self) -> bool:
         """Check database health."""
         try:
