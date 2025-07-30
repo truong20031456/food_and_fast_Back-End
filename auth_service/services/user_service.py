@@ -36,13 +36,13 @@ class UserService:
                 last_name=user_data.last_name,
                 phone_number=user_data.phone_number,
                 bio=user_data.bio,
-                status="pending_verification"
+                status="pending_verification",
             )
 
             self.db.add(user)
             await self.db.commit()
             await self.db.refresh(user)
-            
+
             logger.info(f"User created successfully: {user.email}")
             return user
 
@@ -54,9 +54,7 @@ class UserService:
     async def get_by_email(self, email: str) -> Optional[User]:
         """Get user by email"""
         try:
-            result = await self.db.execute(
-                select(User).where(User.email == email)
-            )
+            result = await self.db.execute(select(User).where(User.email == email))
             return result.scalar_one_or_none()
         except Exception as e:
             logger.error(f"Failed to get user by email: {e}")
@@ -65,9 +63,7 @@ class UserService:
     async def get_by_id(self, user_id: int) -> Optional[User]:
         """Get user by ID"""
         try:
-            result = await self.db.execute(
-                select(User).where(User.id == user_id)
-            )
+            result = await self.db.execute(select(User).where(User.id == user_id))
             return result.scalar_one_or_none()
         except Exception as e:
             logger.error(f"Failed to get user by ID: {e}")
@@ -105,8 +101,7 @@ class UserService:
                 update(User)
                 .where(User.id == user_id)
                 .values(
-                    last_login_at=datetime.now(timezone.utc),
-                    failed_login_attempts=0
+                    last_login_at=datetime.now(timezone.utc), failed_login_attempts=0
                 )
             )
             await self.db.commit()
@@ -128,4 +123,4 @@ class UserService:
         except Exception as e:
             await self.db.rollback()
             logger.error(f"Failed to increment failed attempts: {e}")
-            return False 
+            return False

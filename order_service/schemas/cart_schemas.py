@@ -2,6 +2,7 @@ from pydantic import BaseModel, field_validator, ConfigDict
 from typing import Optional, List
 from datetime import datetime
 
+
 class CartItemBase(BaseModel):
     product_id: int
     product_name: str
@@ -9,34 +10,37 @@ class CartItemBase(BaseModel):
     price: float
     quantity: int = 1
     special_instructions: Optional[str] = None
-    
-    @field_validator('price')
+
+    @field_validator("price")
     @classmethod
     def price_must_be_positive(cls, v):
         if v <= 0:
-            raise ValueError('Price must be positive')
+            raise ValueError("Price must be positive")
         return v
-    
-    @field_validator('quantity')
+
+    @field_validator("quantity")
     @classmethod
     def quantity_must_be_positive(cls, v):
         if v <= 0:
-            raise ValueError('Quantity must be positive')
+            raise ValueError("Quantity must be positive")
         return v
+
 
 class CartItemCreate(CartItemBase):
     pass
 
+
 class CartItemUpdate(BaseModel):
     quantity: Optional[int] = None
     special_instructions: Optional[str] = None
-    
-    @field_validator('quantity')
+
+    @field_validator("quantity")
     @classmethod
     def quantity_must_be_positive(cls, v):
         if v is not None and v <= 0:
-            raise ValueError('Quantity must be positive')
+            raise ValueError("Quantity must be positive")
         return v
+
 
 class CartItemResponse(CartItemBase):
     id: int
@@ -44,15 +48,18 @@ class CartItemResponse(CartItemBase):
     subtotal: float
     created_at: datetime
     updated_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
+
 
 class CartBase(BaseModel):
     user_id: int
     session_id: Optional[str] = None
 
+
 class CartCreate(CartBase):
     pass
+
 
 class CartResponse(BaseModel):
     id: int
@@ -64,8 +71,9 @@ class CartResponse(BaseModel):
     items: List[CartItemResponse] = []
     created_at: datetime
     updated_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
+
 
 class CartSummary(BaseModel):
     id: int
@@ -74,5 +82,5 @@ class CartSummary(BaseModel):
     total_items: int
     status: str
     created_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)

@@ -3,7 +3,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
 from core.database import get_db
-from schemas.product import ProductCreate, ProductUpdate, ProductRead, ProductListResponse
+from schemas.product import (
+    ProductCreate,
+    ProductUpdate,
+    ProductRead,
+    ProductListResponse,
+)
 from schemas.common import MessageResponse
 from modules.catalog.catalog_service import CatalogService
 
@@ -18,7 +23,7 @@ async def get_catalog_service(db: AsyncSession = Depends(get_db)) -> CatalogServ
 @router.post("/", response_model=ProductRead, status_code=status.HTTP_201_CREATED)
 async def create_product(
     product_data: ProductCreate,
-    catalog_service: CatalogService = Depends(get_catalog_service)
+    catalog_service: CatalogService = Depends(get_catalog_service),
 ):
     """Create a new product"""
     try:
@@ -32,8 +37,7 @@ async def create_product(
 
 @router.get("/{product_id}", response_model=ProductRead)
 async def get_product(
-    product_id: int,
-    catalog_service: CatalogService = Depends(get_catalog_service)
+    product_id: int, catalog_service: CatalogService = Depends(get_catalog_service)
 ):
     """Get product by ID"""
     product = await catalog_service.get_product(product_id)
@@ -44,8 +48,7 @@ async def get_product(
 
 @router.get("/slug/{slug}", response_model=ProductRead)
 async def get_product_by_slug(
-    slug: str,
-    catalog_service: CatalogService = Depends(get_catalog_service)
+    slug: str, catalog_service: CatalogService = Depends(get_catalog_service)
 ):
     """Get product by slug"""
     product = await catalog_service.get_product_by_slug(slug)
@@ -58,7 +61,7 @@ async def get_product_by_slug(
 async def update_product(
     product_id: int,
     product_data: ProductUpdate,
-    catalog_service: CatalogService = Depends(get_catalog_service)
+    catalog_service: CatalogService = Depends(get_catalog_service),
 ):
     """Update product"""
     product = await catalog_service.update_product(product_id, product_data)
@@ -69,8 +72,7 @@ async def update_product(
 
 @router.delete("/{product_id}", response_model=MessageResponse)
 async def delete_product(
-    product_id: int,
-    catalog_service: CatalogService = Depends(get_catalog_service)
+    product_id: int, catalog_service: CatalogService = Depends(get_catalog_service)
 ):
     """Delete product"""
     success = await catalog_service.delete_product(product_id)
@@ -91,7 +93,7 @@ async def list_products(
     max_price: Optional[float] = Query(None, ge=0),
     sort_by: str = Query("created_at"),
     sort_order: str = Query("desc", regex="^(asc|desc)$"),
-    catalog_service: CatalogService = Depends(get_catalog_service)
+    catalog_service: CatalogService = Depends(get_catalog_service),
 ):
     """List products with filters"""
     return await catalog_service.list_products(
@@ -104,5 +106,5 @@ async def list_products(
         min_price=min_price,
         max_price=max_price,
         sort_by=sort_by,
-        sort_order=sort_order
-    ) 
+        sort_order=sort_order,
+    )

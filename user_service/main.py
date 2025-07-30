@@ -5,6 +5,7 @@ app = FastAPI(title="User Service")
 
 app.include_router(user_router)
 
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""

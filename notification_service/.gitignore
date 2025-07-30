@@ -75,3 +75,6 @@ notification_logs/
 email_templates/temp/
 sms_logs/
 chat_logs/ 
+
+#ruff
+.ruff_cache/

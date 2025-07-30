@@ -7,7 +7,7 @@ from typing import AsyncGenerator
 import logging
 
 # Add shared modules to path
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'shared'))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "shared"))
 
 from core.database import get_database_manager, get_db_session, init_database
 from models.base import Base
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 # Initialize database with auth service settings
 try:
-    db_manager = init_database(settings.base if hasattr(settings, 'base') else settings)
+    db_manager = init_database(settings.base if hasattr(settings, "base") else settings)
     engine = db_manager.engine
     SessionLocal = db_manager.session_factory
 except RuntimeError:
@@ -26,11 +26,13 @@ except RuntimeError:
     engine = db_manager.engine
     SessionLocal = db_manager.session_factory
 
+
 # Legacy function for backward compatibility
 async def get_db() -> AsyncGenerator:
     """Legacy database session dependency"""
     async for session in get_db_session():
         yield session
+
 
 # Legacy initialization function
 async def init_db():
@@ -42,6 +44,7 @@ async def init_db():
     except Exception as e:
         logger.error(f"Database initialization failed: {e}")
         raise
+
 
 # Legacy connection check function
 async def check_db_connection():

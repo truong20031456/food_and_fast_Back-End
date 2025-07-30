@@ -11,8 +11,8 @@ profile_router = APIRouter(prefix="/profile", tags=["Profile Management"])
 
 __all__ = [
     "auth_router",
-    "user_router", 
+    "user_router",
     "token_router",
     "password_router",
-    "profile_router"
-] 
+    "profile_router",
+]

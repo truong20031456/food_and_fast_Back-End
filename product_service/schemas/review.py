@@ -5,6 +5,7 @@ from datetime import datetime
 
 class ReviewBase(BaseModel):
     """Base review schema"""
+
     product_id: int = Field(..., description="Product ID")
     user_id: int = Field(..., description="User ID")
     rating: float = Field(..., ge=1, le=5, description="Rating (1-5 stars)")
@@ -16,11 +17,13 @@ class ReviewBase(BaseModel):
 
 class ReviewCreate(ReviewBase):
     """Create review schema"""
+
     pass
 
 
 class ReviewUpdate(BaseModel):
     """Update review schema"""
+
     rating: Optional[float] = Field(None, ge=1, le=5)
     title: Optional[str] = Field(None, max_length=200)
     comment: Optional[str] = None
@@ -30,6 +33,7 @@ class ReviewUpdate(BaseModel):
 
 class ReviewRead(ReviewBase):
     """Read review schema"""
+
     id: int
     is_helpful: int
     created_at: datetime
@@ -41,6 +45,7 @@ class ReviewRead(ReviewBase):
 
 class ReviewListResponse(BaseModel):
     """Review list response schema"""
+
     total: int
     average_rating: float
     reviews: list[ReviewRead]
@@ -48,7 +53,8 @@ class ReviewListResponse(BaseModel):
 
 class ReviewStats(BaseModel):
     """Review statistics schema"""
+
     total_reviews: int
     average_rating: float
     rating_distribution: dict[str, int]  # {"1": 10, "2": 20, "3": 30, "4": 40, "5": 50}
-    verified_purchases: int 
+    verified_purchases: int

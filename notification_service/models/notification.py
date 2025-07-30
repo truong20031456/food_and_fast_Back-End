@@ -1,6 +1,7 @@
 """
 Notification Models - Data models for notification service.
 """
+
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
@@ -9,6 +10,7 @@ from enum import Enum
 
 class NotificationType(str, Enum):
     """Notification types."""
+
     EMAIL = "email"
     SMS = "sms"
     PUSH = "push"
@@ -17,6 +19,7 @@ class NotificationType(str, Enum):
 
 class NotificationStatus(str, Enum):
     """Notification status."""
+
     PENDING = "pending"
     SENT = "sent"
     DELIVERED = "delivered"
@@ -26,6 +29,7 @@ class NotificationStatus(str, Enum):
 
 class NotificationPriority(str, Enum):
     """Notification priority levels."""
+
     LOW = "low"
     NORMAL = "normal"
     HIGH = "high"
@@ -34,6 +38,7 @@ class NotificationPriority(str, Enum):
 
 class NotificationTemplate(BaseModel):
     """Model for notification templates."""
+
     template_id: str
     name: str
     type: NotificationType
@@ -47,6 +52,7 @@ class NotificationTemplate(BaseModel):
 
 class NotificationRequest(BaseModel):
     """Model for notification request."""
+
     notification_id: str
     user_id: str
     type: NotificationType
@@ -62,6 +68,7 @@ class NotificationRequest(BaseModel):
 
 class NotificationDelivery(BaseModel):
     """Model for notification delivery tracking."""
+
     delivery_id: str
     notification_id: str
     status: NotificationStatus
@@ -75,6 +82,7 @@ class NotificationDelivery(BaseModel):
 
 class NotificationHistory(BaseModel):
     """Model for notification history."""
+
     history_id: str
     notification_id: str
     user_id: str
@@ -91,6 +99,7 @@ class NotificationHistory(BaseModel):
 
 class ChatMessage(BaseModel):
     """Model for chat messages."""
+
     message_id: str
     conversation_id: str
     user_id: str
@@ -103,6 +112,7 @@ class ChatMessage(BaseModel):
 
 class Conversation(BaseModel):
     """Model for chat conversations."""
+
     conversation_id: str
     user_id: str
     agent_id: Optional[str] = None
@@ -115,6 +125,7 @@ class Conversation(BaseModel):
 
 class NotificationConfig(BaseModel):
     """Model for notification configuration."""
+
     service_enabled: bool = True
     email_enabled: bool = True
     sms_enabled: bool = True

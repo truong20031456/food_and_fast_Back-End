@@ -27,7 +27,7 @@ async def search_products(
     offset: int = Query(0, ge=0),
     sort_by: str = Query("created_at"),
     sort_order: str = Query("desc", regex="^(asc|desc)$"),
-    catalog_service: CatalogService = Depends(get_catalog_service)
+    catalog_service: CatalogService = Depends(get_catalog_service),
 ):
     """Search products"""
     return await catalog_service.list_products(
@@ -39,7 +39,7 @@ async def search_products(
         max_price=max_price,
         is_featured=featured,
         sort_by=sort_by,
-        sort_order=sort_order
+        sort_order=sort_order,
     )
 
 
@@ -50,7 +50,7 @@ async def advanced_search(
     offset: int = Query(0, ge=0),
     sort_by: str = Query("created_at"),
     sort_order: str = Query("desc", regex="^(asc|desc)$"),
-    catalog_service: CatalogService = Depends(get_catalog_service)
+    catalog_service: CatalogService = Depends(get_catalog_service),
 ):
     """Advanced product search"""
     return await catalog_service.list_products(
@@ -62,5 +62,5 @@ async def advanced_search(
         max_price=search_query.max_price,
         is_featured=search_query.featured,
         sort_by=sort_by,
-        sort_order=sort_order
-    ) 
+        sort_order=sort_order,
+    )

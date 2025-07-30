@@ -3,7 +3,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
 from core.database import get_db
-from schemas.category import CategoryCreate, CategoryUpdate, CategoryRead, CategoryListResponse
+from schemas.category import (
+    CategoryCreate,
+    CategoryUpdate,
+    CategoryRead,
+    CategoryListResponse,
+)
 from schemas.common import MessageResponse
 from modules.catalog.catalog_service import CatalogService
 
@@ -18,7 +23,7 @@ async def get_catalog_service(db: AsyncSession = Depends(get_db)) -> CatalogServ
 @router.post("/", response_model=CategoryRead, status_code=status.HTTP_201_CREATED)
 async def create_category(
     category_data: CategoryCreate,
-    catalog_service: CatalogService = Depends(get_catalog_service)
+    catalog_service: CatalogService = Depends(get_catalog_service),
 ):
     """Create a new category"""
     try:
@@ -32,8 +37,7 @@ async def create_category(
 
 @router.get("/{category_id}", response_model=CategoryRead)
 async def get_category(
-    category_id: int,
-    catalog_service: CatalogService = Depends(get_catalog_service)
+    category_id: int, catalog_service: CatalogService = Depends(get_catalog_service)
 ):
     """Get category by ID"""
     category = await catalog_service.get_category(category_id)
@@ -44,8 +48,7 @@ async def get_category(
 
 @router.get("/slug/{slug}", response_model=CategoryRead)
 async def get_category_by_slug(
-    slug: str,
-    catalog_service: CatalogService = Depends(get_catalog_service)
+    slug: str, catalog_service: CatalogService = Depends(get_catalog_service)
 ):
     """Get category by slug"""
     category = await catalog_service.get_category_by_slug(slug)
@@ -58,7 +61,7 @@ async def get_category_by_slug(
 async def update_category(
     category_id: int,
     category_data: CategoryUpdate,
-    catalog_service: CatalogService = Depends(get_catalog_service)
+    catalog_service: CatalogService = Depends(get_catalog_service),
 ):
     """Update category"""
     category = await catalog_service.update_category(category_id, category_data)
@@ -69,8 +72,7 @@ async def update_category(
 
 @router.delete("/{category_id}", response_model=MessageResponse)
 async def delete_category(
-    category_id: int,
-    catalog_service: CatalogService = Depends(get_catalog_service)
+    category_id: int, catalog_service: CatalogService = Depends(get_catalog_service)
 ):
     """Delete category"""
     success = await catalog_service.delete_category(category_id)
@@ -82,7 +84,7 @@ async def delete_category(
 @router.get("/", response_model=CategoryListResponse)
 async def list_categories(
     parent_id: Optional[int] = Query(None),
-    catalog_service: CatalogService = Depends(get_catalog_service)
+    catalog_service: CatalogService = Depends(get_catalog_service),
 ):
     """List categories"""
-    return await catalog_service.list_categories(parent_id=parent_id) 
+    return await catalog_service.list_categories(parent_id=parent_id)

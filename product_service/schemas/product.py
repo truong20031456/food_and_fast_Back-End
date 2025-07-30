@@ -5,6 +5,7 @@ from datetime import datetime
 
 class ProductImageBase(BaseModel):
     """Base product image schema"""
+
     image_url: str = Field(..., description="Image URL")
     alt_text: Optional[str] = Field(None, description="Alt text for image")
     is_primary: bool = Field(False, description="Is primary image")
@@ -13,11 +14,13 @@ class ProductImageBase(BaseModel):
 
 class ProductImageCreate(ProductImageBase):
     """Create product image schema"""
+
     pass
 
 
 class ProductImageUpdate(BaseModel):
     """Update product image schema"""
+
     image_url: Optional[str] = None
     alt_text: Optional[str] = None
     is_primary: Optional[bool] = None
@@ -26,6 +29,7 @@ class ProductImageUpdate(BaseModel):
 
 class ProductImageRead(ProductImageBase):
     """Read product image schema"""
+
     id: int
     product_id: int
     created_at: datetime
@@ -37,10 +41,13 @@ class ProductImageRead(ProductImageBase):
 
 class ProductBase(BaseModel):
     """Base product schema"""
+
     name: str = Field(..., min_length=1, max_length=200, description="Product name")
     slug: str = Field(..., min_length=1, max_length=200, description="Product slug")
     description: Optional[str] = Field(None, description="Product description")
-    short_description: Optional[str] = Field(None, max_length=500, description="Short description")
+    short_description: Optional[str] = Field(
+        None, max_length=500, description="Short description"
+    )
     price: float = Field(..., gt=0, description="Product price")
     compare_price: Optional[float] = Field(None, gt=0, description="Compare price")
     cost_price: Optional[float] = Field(None, gt=0, description="Cost price")
@@ -54,18 +61,22 @@ class ProductBase(BaseModel):
     is_virtual: bool = Field(False, description="Is virtual product")
     meta_title: Optional[str] = Field(None, max_length=200, description="Meta title")
     meta_description: Optional[str] = Field(None, description="Meta description")
-    meta_keywords: Optional[str] = Field(None, max_length=500, description="Meta keywords")
+    meta_keywords: Optional[str] = Field(
+        None, max_length=500, description="Meta keywords"
+    )
     tags: Optional[List[str]] = Field(None, description="Product tags")
     attributes: Optional[Dict[str, Any]] = Field(None, description="Product attributes")
 
 
 class ProductCreate(ProductBase):
     """Create product schema"""
+
     pass
 
 
 class ProductUpdate(BaseModel):
     """Update product schema"""
+
     name: Optional[str] = Field(None, min_length=1, max_length=200)
     slug: Optional[str] = Field(None, min_length=1, max_length=200)
     description: Optional[str] = None
@@ -90,6 +101,7 @@ class ProductUpdate(BaseModel):
 
 class ProductRead(ProductBase):
     """Read product schema"""
+
     id: int
     is_in_stock: bool
     discount_percentage: float
@@ -103,8 +115,9 @@ class ProductRead(ProductBase):
 
 class ProductListResponse(BaseModel):
     """Product list response schema"""
+
     total: int
     page: int
     size: int
     pages: int
-    products: List[ProductRead] 
+    products: List[ProductRead]

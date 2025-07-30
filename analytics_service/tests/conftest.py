@@ -1,6 +1,7 @@
 """
 Pytest Configuration - Analytics Service Tests.
 """
+
 import pytest
 import asyncio
 from typing import AsyncGenerator
@@ -14,7 +15,9 @@ from core.config import settings
 
 
 # Test database URL
-TEST_DATABASE_URL = "postgresql+asyncpg://test_user:test_password@localhost:5432/test_analytics_db"
+TEST_DATABASE_URL = (
+    "postgresql+asyncpg://test_user:test_password@localhost:5432/test_analytics_db"
+)
 
 # Create test engine
 test_engine = create_async_engine(TEST_DATABASE_URL, echo=False)
@@ -79,7 +82,7 @@ def sample_sales_data():
         "date": "2024-01-01",
         "amount": 1000.0,
         "order_count": 10,
-        "customer_count": 8
+        "customer_count": 8,
     }
 
 
@@ -91,7 +94,7 @@ def sample_product_data():
         "product_name": "Test Product",
         "quantity_sold": 50,
         "revenue": 500.0,
-        "category": "Electronics"
+        "category": "Electronics",
     }
 
 
@@ -103,5 +106,5 @@ def sample_user_activity_data():
         "login_count": 5,
         "last_login": "2024-01-01T10:00:00",
         "total_orders": 3,
-        "total_spent": 150.0
+        "total_spent": 150.0,
     }

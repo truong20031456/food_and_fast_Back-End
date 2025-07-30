@@ -2,7 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
-from schemas.inventory import InventoryCreate, InventoryUpdate, InventoryRead, InventoryAdjustment
+from schemas.inventory import (
+    InventoryCreate,
+    InventoryUpdate,
+    InventoryRead,
+    InventoryAdjustment,
+)
 from schemas.common import MessageResponse
 from modules.inventory.inventory_service import InventoryService
 
@@ -17,7 +22,7 @@ async def get_inventory_service(db: AsyncSession = Depends(get_db)) -> Inventory
 @router.post("/", response_model=InventoryRead, status_code=status.HTTP_201_CREATED)
 async def create_inventory(
     inventory_data: InventoryCreate,
-    inventory_service: InventoryService = Depends(get_inventory_service)
+    inventory_service: InventoryService = Depends(get_inventory_service),
 ):
     """Create inventory record for a product"""
     try:
@@ -32,7 +37,7 @@ async def create_inventory(
 @router.get("/{inventory_id}", response_model=InventoryRead)
 async def get_inventory(
     inventory_id: int,
-    inventory_service: InventoryService = Depends(get_inventory_service)
+    inventory_service: InventoryService = Depends(get_inventory_service),
 ):
     """Get inventory by ID"""
     inventory = await inventory_service.get_inventory(inventory_id)
@@ -44,12 +49,14 @@ async def get_inventory(
 @router.get("/product/{product_id}", response_model=InventoryRead)
 async def get_inventory_by_product(
     product_id: int,
-    inventory_service: InventoryService = Depends(get_inventory_service)
+    inventory_service: InventoryService = Depends(get_inventory_service),
 ):
     """Get inventory by product ID"""
     inventory = await inventory_service.get_inventory_by_product_id(product_id)
     if not inventory:
-        raise HTTPException(status_code=404, detail="Inventory not found for this product")
+        raise HTTPException(
+            status_code=404, detail="Inventory not found for this product"
+        )
     return inventory
 
 
@@ -57,7 +64,7 @@ async def get_inventory_by_product(
 async def update_inventory(
     inventory_id: int,
     inventory_data: InventoryUpdate,
-    inventory_service: InventoryService = Depends(get_inventory_service)
+    inventory_service: InventoryService = Depends(get_inventory_service),
 ):
     """Update inventory"""
     inventory = await inventory_service.update_inventory(inventory_id, inventory_data)
@@ -70,12 +77,14 @@ async def update_inventory(
 async def adjust_inventory(
     product_id: int,
     adjustment: InventoryAdjustment,
-    inventory_service: InventoryService = Depends(get_inventory_service)
+    inventory_service: InventoryService = Depends(get_inventory_service),
 ):
     """Adjust inventory quantity"""
     try:
         success = await inventory_service.adjust_inventory(product_id, adjustment)
-        return {"message": f"Inventory adjusted successfully: {adjustment.quantity_change}"}
+        return {
+            "message": f"Inventory adjusted successfully: {adjustment.quantity_change}"
+        }
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -86,7 +95,7 @@ async def adjust_inventory(
 async def reserve_inventory(
     product_id: int,
     quantity: int,
-    inventory_service: InventoryService = Depends(get_inventory_service)
+    inventory_service: InventoryService = Depends(get_inventory_service),
 ):
     """Reserve inventory for order"""
     try:
@@ -102,7 +111,7 @@ async def reserve_inventory(
 async def release_inventory(
     product_id: int,
     quantity: int,
-    inventory_service: InventoryService = Depends(get_inventory_service)
+    inventory_service: InventoryService = Depends(get_inventory_service),
 ):
     """Release reserved inventory"""
     try:
@@ -118,7 +127,7 @@ async def release_inventory(
 async def consume_inventory(
     product_id: int,
     quantity: int,
-    inventory_service: InventoryService = Depends(get_inventory_service)
+    inventory_service: InventoryService = Depends(get_inventory_service),
 ):
     """Consume inventory (reduce both quantity and reserved)"""
     try:
@@ -133,7 +142,7 @@ async def consume_inventory(
 @router.get("/low-stock/", response_model=list[InventoryRead])
 async def get_low_stock_products(
     limit: int = 50,
-    inventory_service: InventoryService = Depends(get_inventory_service)
+    inventory_service: InventoryService = Depends(get_inventory_service),
 ):
     """Get products with low stock"""
     return await inventory_service.get_low_stock_products(limit)
@@ -142,7 +151,7 @@ async def get_low_stock_products(
 @router.get("/out-of-stock/", response_model=list[InventoryRead])
 async def get_out_of_stock_products(
     limit: int = 50,
-    inventory_service: InventoryService = Depends(get_inventory_service)
+    inventory_service: InventoryService = Depends(get_inventory_service),
 ):
     """Get out of stock products"""
-    return await inventory_service.get_out_of_stock_products(limit) 
+    return await inventory_service.get_out_of_stock_products(limit)

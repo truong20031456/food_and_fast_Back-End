@@ -6,6 +6,8 @@ import os
 import sys
 import asyncio
 import subprocess
+import secrets
+import string
 from pathlib import Path
 import shutil
 from typing import List, Dict
@@ -57,16 +59,25 @@ def install_dependencies():
             else:
                 print(f"✅ {service} dependencies installed")
 
+def generate_secret_key(length: int = 32) -> str:
+    """Generate a secure random secret key"""
+    alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+    return ''.join(secrets.choice(alphabet) for _ in range(length))
+
 def create_env_files():
     """Create .env files for each service"""
     print("🔧 Creating environment files...")
+    
+    # Generate a secure secret key
+    secret_key = generate_secret_key(64)
+    print(f"🔑 Generated secret key: {secret_key[:20]}...")
     
     # Base environment variables
     base_env = {
         "ENVIRONMENT": "development",
         "DEBUG": "true",
         "LOG_LEVEL": "INFO",
-        "SECRET_KEY": "dev-secret-key-change-in-production",
+        "SECRET_KEY": secret_key,
         "DATABASE_URL": "postgresql+asyncpg://postgres:password@localhost:5432/food_fast_db",
         "REDIS_URL": "redis://localhost:6379/0",
         "ALLOWED_ORIGINS": "*"
@@ -203,7 +214,7 @@ def verify_setup():
     
     # Check if shared modules are accessible
     try:
-        from core.config import BaseServiceSettings
+        from shared.core.config import BaseServiceSettings
         checks.append(("Shared modules", True))
     except ImportError as e:
         checks.append(("Shared modules", False, str(e)))
