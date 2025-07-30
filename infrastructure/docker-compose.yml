@@ -6,9 +6,9 @@ services:
     image: postgres:15
     container_name: food_fast_postgres
     environment:
-      POSTGRES_DB: food_fast
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: password
+      POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
@@ -16,7 +16,7 @@ services:
     networks:
       - food_fast_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin -d food_fast"]
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER} -d ${DATABASE_NAME}"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -65,9 +65,11 @@ services:
     container_name: food_fast_api_gateway
     ports:
       - "8000:8000"
+    env_file:
+      - ../api_gateway/.env
     environment:
-      - GATEWAY_HOST=0.0.0.0
-      - GATEWAY_PORT=8000
+      - SERVICE_HOST=0.0.0.0
+      - SERVICE_PORT=8000
     depends_on:
       postgres:
         condition: service_healthy
@@ -85,11 +87,13 @@ services:
     container_name: food_fast_auth_service
     ports:
       - "8001:8001"
+    env_file:
+      - ../auth_service/.env
     environment:
-      - AUTH_SERVICE_HOST=0.0.0.0
-      - AUTH_SERVICE_PORT=8001
-      - DATABASE_URL=postgresql://admin:password@postgres:5432/food_fast
-      - REDIS_URL=redis://redis:6379
+      - SERVICE_HOST=0.0.0.0
+      - SERVICE_PORT=8001
+      - DATABASE_URL=postgresql+asyncpg://${DATABASE_USER}:${DATABASE_PASSWORD}@postgres:5432/auth_service_db
+      - REDIS_URL=redis://redis:6379/1
     depends_on:
       postgres:
         condition: service_healthy
@@ -107,11 +111,13 @@ services:
     container_name: food_fast_user_service
     ports:
       - "8002:8002"
+    env_file:
+      - ../user_service/.env
     environment:
-      - USER_SERVICE_HOST=0.0.0.0
-      - USER_SERVICE_PORT=8002
-      - DATABASE_URL=postgresql://admin:password@postgres:5432/food_fast
-      - REDIS_URL=redis://redis:6379
+      - SERVICE_HOST=0.0.0.0
+      - SERVICE_PORT=8002
+      - DATABASE_URL=postgresql+asyncpg://${DATABASE_USER}:${DATABASE_PASSWORD}@postgres:5432/user_service_db
+      - REDIS_URL=redis://redis:6379/2
     depends_on:
       postgres:
         condition: service_healthy
@@ -129,11 +135,13 @@ services:
     container_name: food_fast_product_service
     ports:
       - "8003:8003"
+    env_file:
+      - ../product_service/.env
     environment:
-      - PRODUCT_SERVICE_HOST=0.0.0.0
-      - PRODUCT_SERVICE_PORT=8003
-      - DATABASE_URL=postgresql://admin:password@postgres:5432/food_fast
-      - REDIS_URL=redis://redis:6379
+      - SERVICE_HOST=0.0.0.0
+      - SERVICE_PORT=8003
+      - DATABASE_URL=postgresql+asyncpg://${DATABASE_USER}:${DATABASE_PASSWORD}@postgres:5432/product_service_db
+      - REDIS_URL=redis://redis:6379/3
       - ELASTICSEARCH_URL=http://elasticsearch:9200
     depends_on:
       postgres:
@@ -154,11 +162,13 @@ services:
     container_name: food_fast_order_service
     ports:
       - "8004:8004"
+    env_file:
+      - ../order_service/.env
     environment:
-      - ORDER_SERVICE_HOST=0.0.0.0
-      - ORDER_SERVICE_PORT=8004
-      - DATABASE_URL=postgresql://admin:password@postgres:5432/food_fast
-      - REDIS_URL=redis://redis:6379
+      - SERVICE_HOST=0.0.0.0
+      - SERVICE_PORT=8004
+      - DATABASE_URL=postgresql+asyncpg://${DATABASE_USER}:${DATABASE_PASSWORD}@postgres:5432/order_service_db
+      - REDIS_URL=redis://redis:6379/4
     depends_on:
       postgres:
         condition: service_healthy
@@ -176,11 +186,13 @@ services:
     container_name: food_fast_payment_service
     ports:
       - "8005:8005"
+    env_file:
+      - ../payment_service/.env
     environment:
-      - PAYMENT_SERVICE_HOST=0.0.0.0
-      - PAYMENT_SERVICE_PORT=8005
-      - DATABASE_URL=postgresql://admin:password@postgres:5432/food_fast
-      - REDIS_URL=redis://redis:6379
+      - SERVICE_HOST=0.0.0.0
+      - SERVICE_PORT=8005
+      - DATABASE_URL=postgresql+asyncpg://${DATABASE_USER}:${DATABASE_PASSWORD}@postgres:5432/payment_service_db
+      - REDIS_URL=redis://redis:6379/5
     depends_on:
       postgres:
         condition: service_healthy
@@ -198,11 +210,13 @@ services:
     container_name: food_fast_notification_service
     ports:
       - "8006:8006"
+    env_file:
+      - ../notification_service/.env
     environment:
-      - NOTIFICATION_SERVICE_HOST=0.0.0.0
-      - NOTIFICATION_SERVICE_PORT=8006
-      - DATABASE_URL=postgresql://admin:password@postgres:5432/food_fast
-      - REDIS_URL=redis://redis:6379
+      - SERVICE_HOST=0.0.0.0
+      - SERVICE_PORT=8006
+      - DATABASE_URL=postgresql+asyncpg://${DATABASE_USER}:${DATABASE_PASSWORD}@postgres:5432/notification_service_db
+      - REDIS_URL=redis://redis:6379/6
     depends_on:
       postgres:
         condition: service_healthy
@@ -220,11 +234,13 @@ services:
     container_name: food_fast_analytics_service
     ports:
       - "8007:8007"
+    env_file:
+      - ../analytics_service/.env
     environment:
-      - ANALYTICS_SERVICE_HOST=0.0.0.0
-      - ANALYTICS_SERVICE_PORT=8007
-      - DATABASE_URL=postgresql://admin:password@postgres:5432/food_fast
-      - REDIS_URL=redis://redis:6379
+      - SERVICE_HOST=0.0.0.0
+      - SERVICE_PORT=8007
+      - DATABASE_URL=postgresql+asyncpg://${DATABASE_USER}:${DATABASE_PASSWORD}@postgres:5432/analytics_service_db
+      - REDIS_URL=redis://redis:6379/7
       - ELASTICSEARCH_URL=http://elasticsearch:9200
     depends_on:
       postgres:
@@ -263,7 +279,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
     volumes:
       - grafana_data:/var/lib/grafana
     networks:
@@ -277,7 +293,7 @@ services:
     ports:
       - "9187:9187"
     environment:
-      DATA_SOURCE_NAME: "postgresql://admin:password@postgres:5432/food_fast?sslmode=disable"
+      DATA_SOURCE_NAME: "postgresql://${DATABASE_USER}:${DATABASE_PASSWORD}@postgres:5432/${DATABASE_NAME}?sslmode=disable"
     depends_on:
       postgres:
         condition: service_healthy

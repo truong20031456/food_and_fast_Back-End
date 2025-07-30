@@ -101,7 +101,8 @@ jobs:
     - name: 🔧 Set up environment variables
       run: |
         echo "REDIS_URL=redis://localhost:6379/1" >> $GITHUB_ENV
-        echo "SECRET_KEY=test_secret_key_for_ci_cd" >> $GITHUB_ENV
+        echo "SECRET_KEY=${{ secrets.API_GATEWAY_SECRET_KEY || 'test_secret_key_for_ci_cd' }}" >> $GITHUB_ENV
+        echo "JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY || 'test_jwt_secret_key_for_ci_cd' }}" >> $GITHUB_ENV
         echo "AUTH_SERVICE_URL=http://localhost:8001" >> $GITHUB_ENV
         echo "USER_SERVICE_URL=http://localhost:8002" >> $GITHUB_ENV
         echo "PRODUCT_SERVICE_URL=http://localhost:8003" >> $GITHUB_ENV
