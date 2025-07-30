@@ -1,0 +1,201 @@
+version: '3.8'
+
+name: food-fast-dev
+
+services:
+  # Infrastructure Services
+  postgres:
+    image: postgres:15
+    container_name: food_fast_postgres_dev
+    environment:
+      POSTGRES_DB: food_fast
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./scripts/init-dbs.sql:/docker-entrypoint-initdb.d/init-dbs.sql
+    networks:
+      - food_fast_dev_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d food_fast"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: food_fast_redis_dev
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_dev_data:/data
+    networks:
+      - food_fast_dev_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: food_fast_elasticsearch_dev
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - bootstrap.memory_lock=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_dev_data:/usr/share/elasticsearch/data
+    networks:
+      - food_fast_dev_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Development Services (with hot reload)
+  api_gateway_dev:
+    build:
+      context: ./api_gateway
+      dockerfile: Dockerfile.dev
+    container_name: food_fast_api_gateway_dev
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - SERVICE_HOST=0.0.0.0
+      - SERVICE_PORT=8000
+      - DATABASE_URL=sqlite+aiosqlite:///./api_gateway.db
+      - REDIS_URL=redis://redis:6379/0
+      - AUTH_SERVICE_URL=http://auth_service_dev:8001
+      - USER_SERVICE_URL=http://user_service_dev:8002
+      - PRODUCT_SERVICE_URL=http://product_service_dev:8003
+      - ORDER_SERVICE_URL=http://order_service_dev:8004
+      - PAYMENT_SERVICE_URL=http://payment_service_dev:8005
+      - NOTIFICATION_SERVICE_URL=http://notification_service_dev:8006
+      - ANALYTICS_SERVICE_URL=http://analytics_service_dev:8007
+    volumes:
+      - ./api_gateway:/app
+      - ./shared:/app/shared
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - food_fast_dev_network
+    restart: unless-stopped
+
+  auth_service_dev:
+    build:
+      context: ./auth_service
+      dockerfile: Dockerfile.dev
+    container_name: food_fast_auth_service_dev
+    ports:
+      - "8001:8001"
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - SERVICE_HOST=0.0.0.0
+      - SERVICE_PORT=8001
+      - DATABASE_URL=postgresql+asyncpg://postgres:password@postgres:5432/auth_service_db
+      - REDIS_URL=redis://redis:6379/1
+      - SECRET_KEY=auth-dev-secret-key
+    volumes:
+      - ./auth_service:/app
+      - ./shared:/app/shared
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - food_fast_dev_network
+    restart: unless-stopped
+
+  user_service_dev:
+    build:
+      context: ./user_service
+      dockerfile: Dockerfile.dev
+    container_name: food_fast_user_service_dev
+    ports:
+      - "8002:8002"
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - SERVICE_HOST=0.0.0.0
+      - SERVICE_PORT=8002
+      - DATABASE_URL=postgresql+asyncpg://postgres:password@postgres:5432/user_service_db
+      - REDIS_URL=redis://redis:6379/2
+    volumes:
+      - ./user_service:/app
+      - ./shared:/app/shared
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - food_fast_dev_network
+    restart: unless-stopped
+
+  # Monitoring Services
+  prometheus_dev:
+    image: prom/prometheus:latest
+    container_name: food_fast_prometheus_dev
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infrastructure/monitoring/prometheus-dev.yml:/etc/prometheus/prometheus.yml
+      - prometheus_dev_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+    networks:
+      - food_fast_dev_network
+    restart: unless-stopped
+    profiles:
+      - monitoring
+
+  grafana_dev:
+    image: grafana/grafana:latest
+    container_name: food_fast_grafana_dev
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_dev_data:/var/lib/grafana
+      - ./infrastructure/monitoring/grafana-dev:/etc/grafana/provisioning
+    networks:
+      - food_fast_dev_network
+    restart: unless-stopped
+    profiles:
+      - monitoring
+
+volumes:
+  postgres_dev_data:
+  redis_dev_data:
+  elasticsearch_dev_data:
+  prometheus_dev_data:
+  grafana_dev_data:
+
+networks:
+  food_fast_dev_network:
+    driver: bridge
+    name: food_fast_dev_network
