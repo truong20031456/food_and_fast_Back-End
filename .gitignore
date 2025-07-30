@@ -42,6 +42,7 @@ coverage.xml
 cover/
 
 # Environment Variables - DO NOT COMMIT
+.claude
 .env
 .env.local
 .env.production
