@@ -78,3 +78,5 @@ reports/temp/
 *.json
 data_exports/
 cache/ 
+# Claude AI
+.claude/

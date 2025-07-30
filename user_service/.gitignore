@@ -75,3 +75,5 @@ user_data/
 profile_images/
 avatars/
 temp_uploads/ 
+# Claude AI
+.claude/

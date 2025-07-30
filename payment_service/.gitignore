@@ -82,3 +82,5 @@ transaction_data/
 # Sensitive payment data
 payment_config.json
 gateway_credentials.json 
+# Claude AI
+.claude/

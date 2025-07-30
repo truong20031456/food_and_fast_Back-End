@@ -73,3 +73,5 @@ Thumbs.db
 # Order data (if stored locally)
 orders_data/
 temp_orders/ 
+# Claude AI
+.claude/

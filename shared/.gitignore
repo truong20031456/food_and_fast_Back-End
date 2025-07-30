@@ -73,3 +73,5 @@ Thumbs.db
 # Shared specific
 shared_cache/
 temp_shared/ 
+# Claude AI
+.claude/
