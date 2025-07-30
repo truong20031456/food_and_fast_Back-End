@@ -1,6 +1,18 @@
 # Auth Service Main
+import sys
+import os
 
-from fastapi import FastAPI
+# Add shared modules to path
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'shared'))
+
+from fastapi import FastAPI, APIRouter
+from sqlalchemy.ext.asyncio import AsyncSession
+from contextlib import asynccontextmanager
+
+from core.app import create_app
+from core.config import get_service_settings
+from core.database import get_database_manager
+from models.base import Base
 from controllers import (
     auth_router,
     user_router,
@@ -8,33 +20,41 @@ from controllers import (
     password_router,
     profile_router,
 )
-from core.database import engine, Base
-from contextlib import asynccontextmanager
 
+# Get service settings
+settings = get_service_settings("auth_service")
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Create tables if they don't exist (async)
-    async with engine.begin() as conn:
+# Import models to ensure they're registered
+from models import user  # This ensures User model is registered
+
+async def startup_task():
+    """Create database tables on startup"""
+    db_manager = get_database_manager()
+    
+    # Create tables
+    async with db_manager.engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    yield
 
-
-app = FastAPI(
-    title="Auth Service",
-    description="FastAPI Authentication Service",
-    version="1.0.0",
-    lifespan=lifespan,
+# Create the FastAPI app with standardized configuration
+app = create_app(
+    service_name="Auth Service",
+    settings=settings,
+    routers=[
+        auth_router,
+        user_router,
+        token_router,
+        password_router,
+        profile_router
+    ],
+    startup_tasks=[startup_task]
 )
 
-# Include all routers
-app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
-app.include_router(user_router, prefix="/users", tags=["User Management"])
-app.include_router(token_router, prefix="/tokens", tags=["Token Management"])
-app.include_router(password_router, prefix="/passwords", tags=["Password Management"])
-app.include_router(profile_router, prefix="/profile", tags=["Profile Management"])
-
-@app.get("/health")
-async def health_check():
-    """Health check endpoint"""
-    return {"status": "healthy", "service": "auth_service"}
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "main:app",
+        host=settings.SERVICE_HOST,
+        port=settings.SERVICE_PORT,
+        reload=settings.is_development,
+        log_level=settings.LOG_LEVEL.value.lower()
+    )
