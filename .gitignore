@@ -41,8 +41,18 @@ coverage.xml
 .pytest_cache/
 cover/
 
-# Environments
+# Environment Variables - DO NOT COMMIT
 .env
+.env.local
+.env.production
+.env.staging
+.env.dev
+**/.env
+**/.env.local
+**/.env.production
+**/.env.staging
+
+# Virtual Environments
 .venv
 env/
 venv/
@@ -72,6 +82,27 @@ Thumbs.db
 logs/
 temp/
 tmp/
+
+# Security and credentials
+*.pem
+*.key
+*.crt
+*.csr
+secrets/
+credentials/
+
+# Docker volumes
+postgres_data/
+redis_data/
+elasticsearch_data/
+prometheus_data/
+grafana_data/
+alertmanager_data/
+
+# Application uploads and media
+uploads/
+media/
+static_collected/
 
 # Alembic
 alembic/versions/*.py

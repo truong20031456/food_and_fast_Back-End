@@ -13,10 +13,9 @@ from core.config import get_service_settings
 settings = get_service_settings(
     "auth_service",
     # Auth service specific overrides
-    SECRET_KEY="auth-service-secret-key-change-in-production",
+    SECRET_KEY=os.getenv("idi"),
     DATABASE_URL="postgresql+asyncpg://truong:truong123@localhost:5432/auth_service_db",
 )
-
 # Auth-specific settings (extend base settings)
 class AuthSettings:
     def __init__(self, base_settings):

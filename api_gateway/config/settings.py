@@ -13,7 +13,8 @@ from core.config import get_service_settings
 settings = get_service_settings(
     "api_gateway",
     # Override specific defaults for API Gateway
-    SECRET_KEY="api-gateway-secret-key-change-in-production",
+    SECRET_KEY=os.getenv("API_GATEWAY_SECRET_KEY", "change-this-in-production"),
+    
     DATABASE_URL="sqlite+aiosqlite:///./api_gateway.db",  # Optional local DB for gateway
 )
 
