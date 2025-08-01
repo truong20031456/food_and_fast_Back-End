@@ -32,4 +32,4 @@ def test_metrics_endpoint():
 def test_services_endpoint():
     """Test services endpoint"""
     response = client.get("/services")
-    assert response.status_code == 200 
+    assert response.status_code == 200

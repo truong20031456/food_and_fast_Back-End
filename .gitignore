@@ -42,6 +42,9 @@ venv.bak/
 *.swo
 *~
 
+# Claude
+.claude/
+
 # Testing
 .coverage
 .pytest_cache/

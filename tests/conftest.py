@@ -12,7 +12,4 @@ def client():
 @pytest.fixture
 def test_headers():
     """Test headers fixture"""
-    return {
-        "Content-Type": "application/json",
-        "User-Agent": "test-client"
-    } 
+    return {"Content-Type": "application/json", "User-Agent": "test-client"}
