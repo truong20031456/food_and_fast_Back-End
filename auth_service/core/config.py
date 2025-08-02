@@ -7,7 +7,7 @@ import os
 # Add shared modules to path
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "shared"))
 
-from core.config import get_service_settings
+from shared.core.config import get_service_settings
 
 # Get standardized settings for Auth Service
 settings = get_service_settings(
