@@ -2,7 +2,7 @@ from fastapi import Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated
 
-from core.database import get_db
+from shared.core.database import get_db
 from services.user_service import UserService
 from services.token_service import TokenService
 from services.audit_service import AuditService

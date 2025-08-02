@@ -31,6 +31,26 @@ class LoginRequest(BaseModel):
     password: str = Field(..., min_length=8, description="Password")
 
 
+class GoogleAuthRequest(BaseModel):
+    """Google OAuth request schema"""
+
+    id_token: str = Field(..., description="Google ID token")
+    access_token: Optional[str] = Field(None, description="Google access token")
+
+
+class GoogleUserInfo(BaseModel):
+    """Google user information schema"""
+
+    sub: str = Field(..., description="Google user ID")
+    email: EmailStr = Field(..., description="User email")
+    email_verified: bool = Field(..., description="Email verification status")
+    name: Optional[str] = Field(None, description="Full name")
+    given_name: Optional[str] = Field(None, description="First name")
+    family_name: Optional[str] = Field(None, description="Last name")
+    picture: Optional[str] = Field(None, description="Profile picture URL")
+    locale: Optional[str] = Field(None, description="User locale")
+
+
 class LoginResponse(BaseModel):
     """User login response schema"""
 

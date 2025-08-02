@@ -1,5 +1,5 @@
 # FastAPI Core
-fastapi
+fastapi[standard]
 uvicorn[standard]
 alembic
 # Authentication & Security
@@ -8,6 +8,12 @@ passlib[bcrypt]
 python-multipart
 bcrypt
 Pillow  # for image processing
+
+# Google OAuth
+google-auth
+google-auth-oauthlib
+google-auth-httplib2
+requests-oauthlib
 
 # Database
 SQLAlchemy

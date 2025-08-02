@@ -110,6 +110,7 @@ services:
       - DATABASE_URL=postgresql+asyncpg://postgres:password@postgres:5432/auth_service_db
       - REDIS_URL=redis://redis:6379/1
       - SECRET_KEY=auth-dev-secret-key
+      - ALLOWED_ORIGINS=["http://localhost:3000", "http://localhost:8000"]
     volumes:
       - ./auth_service:/app
       - ./shared:/app/shared

@@ -2,28 +2,31 @@ from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from sqlalchemy.orm import Session  # Use Session for SQLAlchemy ORM
 from typing import Annotated
 
-from core.database import get_db  # Import get_db from core.database
+
+from shared.core.database import get_db
 from schemas.auth import (
     RegisterRequest,
     LoginRequest,
     LoginResponse,
+    GoogleAuthRequest,
 )  # Use RegisterRequest, LoginRequest
 from schemas.user import UserRead  # For response model
 from schemas.auth import MessageResponse
 
 from services.auth_service import AuthService
+from services.google_oauth_service import GoogleOAuthService
 from services.user_service import UserService
 from services.token_service import TokenService
 from services.audit_service import AuditService
 from services.cache_service import CacheService
-from core.dependencies import (
+from .dependencies import (
     get_user_service,
     get_token_service,
     get_audit_service,
     get_cache_service,
 )
 
-from core.dependencies import (
+from .dependencies import (
     get_current_user,
 )  # Use get_current_user from core.dependencies
 
@@ -39,6 +42,19 @@ async def get_auth_service(
     cache_service: CacheService = Depends(get_cache_service),
 ) -> AuthService:
     return AuthService(db, user_service, token_service, audit_service, cache_service)
+
+
+# Dependency to get GoogleOAuthService instance
+async def get_google_oauth_service(
+    db: Session = Depends(get_db),
+    user_service: UserService = Depends(get_user_service),
+    token_service: TokenService = Depends(get_token_service),
+    audit_service: AuditService = Depends(get_audit_service),
+    cache_service: CacheService = Depends(get_cache_service),
+) -> GoogleOAuthService:
+    return GoogleOAuthService(
+        db, user_service, token_service, audit_service, cache_service
+    )
 
 
 @router.post(
@@ -106,3 +122,63 @@ async def get_me(
 ):
     """Get current user information"""
     return current_user
+
+
+@router.post("/google", response_model=LoginResponse)
+async def google_auth(
+    google_request: GoogleAuthRequest,
+    google_oauth_service: Annotated[
+        GoogleOAuthService, Depends(get_google_oauth_service)
+    ],
+    request: Request,
+):
+    """Authenticate or register user with Google OAuth"""
+    client_ip = request.client.host
+    return await google_oauth_service.authenticate_google_user(
+        google_request, client_ip
+    )
+
+
+@router.get("/google/auth-url")
+async def get_google_auth_url(
+    google_oauth_service: Annotated[
+        GoogleOAuthService, Depends(get_google_oauth_service)
+    ],
+    state: str = None,
+):
+    """Get Google OAuth authorization URL"""
+    auth_url = await google_oauth_service.get_google_auth_url(state)
+    return {"auth_url": auth_url}
+
+
+@router.post("/google/callback")
+async def google_oauth_callback(
+    code: str,
+    google_oauth_service: Annotated[
+        GoogleOAuthService, Depends(get_google_oauth_service)
+    ],
+    request: Request,
+    state: str = None,
+):
+    """Handle Google OAuth callback with authorization code"""
+    client_ip = request.client.host
+
+    try:
+        # Exchange code for tokens
+        tokens = await google_oauth_service.exchange_code_for_tokens(code)
+
+        # Create Google auth request with the tokens
+        google_request = GoogleAuthRequest(
+            id_token=tokens.get("id_token"), access_token=tokens.get("access_token")
+        )
+
+        # Authenticate user
+        return await google_oauth_service.authenticate_google_user(
+            google_request, client_ip
+        )
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Google OAuth callback failed: {str(e)}",
+        )

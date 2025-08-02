@@ -4,7 +4,11 @@ Handles email, SMS, and push notifications for the Food Fast e-commerce platform
 """
 
 import os
+import sys
 from contextlib import asynccontextmanager
+
+# Add shared modules to path
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "shared"))
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,9 +22,9 @@ from controllers.notification_controller import (
 from channels.email import EmailService
 from channels.sms import SMSService
 from support.chat_service import ChatService
-from shared.database.connection import get_database_manager, test_database_connection
-from shared.messaging.redis_client import get_redis_manager, test_redis_connection
-from utils.logger import get_logger, setup_logging
+from shared.core.database import get_database_manager, init_db, close_db
+from shared.utils.redis import get_redis_manager
+from shared.utils.logging import get_logger, setup_logging
 
 # Setup logging
 setup_logging(level=os.getenv("LOG_LEVEL", "INFO"))
@@ -42,26 +46,19 @@ async def lifespan(app: FastAPI):
     logger.info("Notification Service starting up...")
 
     try:
-        # Initialize database connection
-        database_url = os.getenv(
-            "DATABASE_URL", "postgresql://admin:password@localhost:5432/food_fast"
-        )
-        db_manager = get_database_manager(database_url)
+        # Initialize database
+        await init_db()
+        logger.info("Database initialized successfully")
 
         # Initialize Redis connection
-        redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-        redis_manager = get_redis_manager(redis_url)
+        redis_manager = get_redis_manager()
 
-        # Test connections
-        db_connected = await test_database_connection()
-        redis_connected = await test_redis_connection()
-
-        if not db_connected:
+        # Test database connection
+        from shared.core.database import db_manager
+        db_healthy = await db_manager.health_check()
+        if not db_healthy:
             logger.error("Failed to connect to database")
             raise Exception("Database connection failed")
-
-        if not redis_connected:
-            logger.warning("Failed to connect to Redis - some features may be limited")
 
         # Initialize notification services
         email_service = EmailService(redis_manager)
@@ -84,11 +81,7 @@ async def lifespan(app: FastAPI):
     # Shutdown
     logger.info("Notification Service shutting down...")
     try:
-        from shared.database.connection import close_database_connections
-        from shared.messaging.redis_client import close_redis_connections
-
-        close_database_connections()
-        close_redis_connections()
+        await close_db()
         logger.info("Notification Service shutdown complete")
     except Exception as e:
         logger.error(f"Error during shutdown: {e}")
@@ -129,8 +122,8 @@ async def root():
 async def health_check():
     """Health check endpoint."""
     try:
-        db_healthy = await test_database_connection()
-        redis_healthy = await test_redis_connection()
+        from shared.core.database import db_manager
+        db_healthy = await db_manager.health_check()
 
         status = "healthy" if db_healthy else "unhealthy"
 
@@ -138,7 +131,6 @@ async def health_check():
             "status": status,
             "service": "notification-service",
             "database": "connected" if db_healthy else "disconnected",
-            "redis": "connected" if redis_healthy else "disconnected",
         }
     except Exception as e:
         logger.error(f"Health check failed: {e}")

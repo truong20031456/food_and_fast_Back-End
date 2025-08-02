@@ -4,7 +4,11 @@ Provides analytics and reporting capabilities for the Food Fast e-commerce platf
 """
 
 import os
+import sys
 from contextlib import asynccontextmanager
+
+# Add shared modules to path
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "shared"))
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,7 +23,7 @@ from services.analytics_service import AnalyticsService
 from services.sales_report import SalesReportService
 from core.config import settings
 from core.database import db_manager, init_db, close_db
-from utils.logger import get_logger, setup_logging
+from shared.utils.logging import get_logger, setup_logging
 
 # Setup logging
 setup_logging(level=settings.log_level)

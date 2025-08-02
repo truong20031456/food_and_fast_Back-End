@@ -116,7 +116,7 @@ jobs:
       run: |
         echo "DATABASE_URL=postgresql+asyncpg://test_user:postgres@localhost:5432/test_auth_service_db" >> $GITHUB_ENV
         echo "REDIS_URL=redis://localhost:6379/0" >> $GITHUB_ENV
-        echo "SECRET_KEY=${{ secrets.AUTH_SECRET_KEY || 'test_secret_key_for_ci_cd' }}" >> $GITHUB_ENV
+        echo "SECRET_KEY=${{ secrets.AUTH_SERVICE_SECRET_KEY || 'test_secret_key_for_ci_cd' }}" >> $GITHUB_ENV
         echo "JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY || 'test_jwt_secret_key_for_ci_cd' }}" >> $GITHUB_ENV
         echo "ALGORITHM=HS256" >> $GITHUB_ENV
         echo "ACCESS_TOKEN_EXPIRE_MINUTES=30" >> $GITHUB_ENV

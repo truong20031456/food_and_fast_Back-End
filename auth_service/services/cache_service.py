@@ -4,8 +4,8 @@ from datetime import timedelta
 import redis.asyncio as redis
 import json
 
-from core.config import settings
-from utils.logger import get_logger
+from auth_service.core.config import settings
+from auth_service.utils.logger import get_logger
 
 logger = get_logger(__name__)
 

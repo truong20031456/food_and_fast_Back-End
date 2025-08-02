@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.database import get_db
-from app.schemas.user import UserCreate, UserRead, UserUpdate, UserListResponse
+from app.schemas.user import UserCreate, UserRead, UserUpdate, UserListResponse, user
 from app.services.user_service import (
     create_user,
     get_user,
@@ -12,6 +12,16 @@ from app.services.user_service import (
 from app.dependencies import get_current_user_id
 
 router = APIRouter(prefix="/users", tags=["users"])
+
+
+@router.post("/users/google", response_model=user)
+async def google_login(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
+    # Gọi hàm tạo user từ dịch vụ
+    try:
+        db_user = await create_user(db, user_in)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return db_user
 
 
 @router.post("/", response_model=UserRead, status_code=status.HTTP_201_CREATED)

@@ -7,6 +7,7 @@ from passlib.context import CryptContext
 
 from models.user import User
 from schemas.user import UserCreate, UserUpdate
+from schemas.auth import GoogleUserInfo
 from utils.security import get_password_hash
 from utils.logger import get_logger
 
@@ -124,3 +125,68 @@ class UserService:
             await self.db.rollback()
             logger.error(f"Failed to increment failed attempts: {e}")
             return False
+
+    async def create_google_user(self, google_user_info: GoogleUserInfo) -> User:
+        """Create a new user with Google OAuth information"""
+        try:
+            # Check if user already exists
+            existing_user = await self.get_by_email(google_user_info.email)
+            if existing_user:
+                raise ValueError("Email already registered")
+
+            # Create user object
+            user = User(
+                email=google_user_info.email,
+                username=google_user_info.email.split("@")[
+                    0
+                ],  # Use email prefix as username
+                password_hash="",  # No password for OAuth users
+                first_name=google_user_info.given_name,
+                last_name=google_user_info.family_name,
+                avatar_url=google_user_info.picture,
+                google_id=google_user_info.sub,
+                google_picture=google_user_info.picture,
+                status="active",  # Google users are pre-verified
+                is_email_verified=google_user_info.email_verified,
+            )
+
+            self.db.add(user)
+            await self.db.commit()
+            await self.db.refresh(user)
+
+            logger.info(f"Google user created successfully: {user.email}")
+            return user
+
+        except Exception as e:
+            await self.db.rollback()
+            logger.error(f"Failed to create Google user: {e}")
+            raise
+
+    async def link_google_account(self, user_id: int, google_id: str) -> bool:
+        """Link Google account to existing user"""
+        try:
+            user = await self.get_by_id(user_id)
+            if not user:
+                return False
+
+            user.google_id = google_id
+            await self.db.commit()
+
+            logger.info(f"Google account linked to user {user_id}")
+            return True
+
+        except Exception as e:
+            await self.db.rollback()
+            logger.error(f"Failed to link Google account: {e}")
+            return False
+
+    async def get_by_google_id(self, google_id: str) -> Optional[User]:
+        """Get user by Google ID"""
+        try:
+            result = await self.db.execute(
+                select(User).where(User.google_id == google_id)
+            )
+            return result.scalar_one_or_none()
+        except Exception as e:
+            logger.error(f"Failed to get user by Google ID: {e}")
+            return None

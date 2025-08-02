@@ -36,13 +36,17 @@ class User(BaseModel):
     email = Column(String(100), unique=True, nullable=False)
     password_hash = Column(String(255), nullable=False)  # Renamed from hashed_password
 
-    # profile infor
+    # profile info
     first_name = Column(String(50), nullable=True)
     last_name = Column(String(50), nullable=True)
     phone_number = Column(String(20), nullable=True)
     avatar_url = Column(String(255), nullable=True)
     bio = Column(String(500), nullable=True)
     preferences = Column(JSON, nullable=True)  # Added for user preferences
+
+    # OAuth fields
+    google_id = Column(String(100), nullable=True, unique=True, index=True)
+    google_picture = Column(String(500), nullable=True)
 
     # status
     status = Column(
@@ -129,6 +133,8 @@ class User(BaseModel):
             "permissions": [
                 perm.name for role in self.roles for perm in role.permissions
             ],  # Include permissions
+            "google_id": self.google_id,
+            "google_picture": self.google_picture,
         }
 
     def __repr__(self):

@@ -1,152 +1,140 @@
-# User Service
+# User Service - Food & Fast E-Commerce Platform
 
-## Overview
+A robust microservice for managing user accounts in the Food & Fast E-Commerce platform, built with FastAPI and PostgreSQL.
 
-The User Service is a microservice responsible for managing user profiles, preferences, addresses, and user-related data in the Food & Fast E-Commerce platform. It provides comprehensive user management capabilities including profile management, address book, preferences, and user data analytics.
+## 🚀 Features
 
-## Features
+- **User Management**: Complete CRUD operations for user accounts
+- **Authentication**: JWT-based authentication with Google OAuth integration
+- **Security**: Password hashing, input validation, and security best practices
+- **Caching**: Redis-based caching for improved performance
+- **Async Operations**: Full async/await support with PostgreSQL
+- **API Documentation**: Auto-generated Swagger/OpenAPI documentation
+- **Testing**: Comprehensive test suite with pytest
+- **Docker Support**: Production and development Docker configurations
+- **CI/CD**: Automated testing, linting, and deployment pipeline
 
-- 👤 **User Profile Management**: Complete user profile CRUD operations
-- 📍 **Address Management**: Multiple address support with validation
-- ⚙️ **User Preferences**: Customizable user preferences and settings
-- 📊 **User Analytics**: User behavior and engagement tracking
-- 🔐 **Profile Security**: Secure profile data handling
-- 📱 **Multi-Platform Support**: Web and mobile user management
-- 🔄 **Data Synchronization**: Real-time profile updates
-- 📋 **User Segmentation**: User categorization and targeting
+## 🛠 Tech Stack
 
-## Tech Stack
+- **Framework**: [FastAPI](https://fastapi.tiangolo.com/) - Modern, fast web framework
+- **Database**: [PostgreSQL](https://www.postgresql.org/) with [asyncpg](https://github.com/MagicStack/asyncpg)
+- **ORM**: [SQLAlchemy](https://www.sqlalchemy.org/) 2.0 with async support
+- **Cache**: [Redis](https://redis.io/) for session and data caching
+- **Authentication**: [JWT](https://jwt.io/) + [Google OAuth](https://developers.google.com/identity/protocols/oauth2)
+- **Validation**: [Pydantic](https://pydantic-docs.helpmanual.io/) for data validation
+- **Testing**: [pytest](https://pytest.org/) with async support
+- **Code Quality**: [Ruff](https://github.com/astral-sh/ruff), [Black](https://black.readthedocs.io/), [MyPy](https://mypy.readthedocs.io/)
 
-- **Framework**: FastAPI
-- **Database**: PostgreSQL (async)
-- **Cache**: Redis
-- **Authentication**: JWT integration
-- **Validation**: Pydantic
-- **Testing**: pytest
-- **Documentation**: Auto-generated OpenAPI/Swagger
-
-## Project Structure
+## 📁 Project Structure
 
 ```
 user_service/
 ├── app/
-│   ├── config.py        # Application configuration
-│   ├── controllers/     # API route handlers
-│   │   └── user_router.py
-│   ├── db/             # Database configuration
-│   │   ├── base.py
-│   │   └── database.py
-│   ├── dependencies.py  # FastAPI dependencies
-│   ├── middleware/      # Custom middleware
-│   ├── models/          # SQLAlchemy models
-│   │   └── user.py
-│   ├── schemas/         # Pydantic schemas
-│   │   └── user.py
-│   ├── services/        # Business logic
-│   │   └── user_service.py
-│   ├── tests/           # Test files
-│   │   ├── conftest.py
-│   │   ├── test_user_api.py
-│   │   └── test_user_service.py
-│   └── utils/           # Utility functions
-│       ├── jwt_helper.py
-│       └── redis_client.py
-├── main.py             # FastAPI application entry point
-├── requirements.txt    # Python dependencies
-└── Dockerfile         # Docker configuration
+│   ├── config.py              # Application configuration
+│   ├── controllers/           # API route handlers
+│   │   └── user_router.py     # User endpoints
+│   ├── db/                    # Database configuration
+│   │   ├── base.py           # Base database setup
+│   │   └── database.py       # Database connection
+│   ├── dependencies.py        # FastAPI dependencies
+│   ├── models/               # SQLAlchemy models
+│   │   └── user.py           # User model
+│   ├── schemas/              # Pydantic schemas
+│   │   └── user.py           # Request/Response schemas
+│   ├── services/             # Business logic
+│   │   └── user_service.py   # User service layer
+│   ├── tests/                # Test files
+│   │   ├── conftest.py       # Test configuration
+│   │   ├── test_user_api.py  # API tests
+│   │   └── test_user_service.py # Service tests
+│   └── utils/                # Utility functions
+│       ├── jwt_helper.py     # JWT utilities
+│       └── redis_client.py   # Redis client
+├── .github/
+│   └── workflows/
+│       └── ci-user-service.yml # CI/CD pipeline
+├── main.py                   # FastAPI application entry point
+├── requirements.txt          # Python dependencies
+├── Dockerfile               # Production Docker configuration
+├── Dockerfile.dev          # Development Docker configuration
+├── .dockerignore           # Docker ignore file
+└── README.md               # This file
 ```
 
-## API Endpoints
+## 🔌 API Endpoints
 
-### User Profiles
-- `GET /users/profile` - Get current user profile
-- `PUT /users/profile` - Update user profile
-- `DELETE /users/profile` - Delete user account
-- `GET /users/{user_id}` - Get user by ID (admin)
-- `PUT /users/{user_id}` - Update user by ID (admin)
-- `DELETE /users/{user_id}` - Delete user by ID (admin)
+### Authentication
+- `POST /users/google` - Google OAuth login/registration
+- `POST /users/login` - Traditional login
+- `POST /users/refresh` - Refresh JWT token
 
-### User Addresses
-- `GET /users/addresses` - Get user addresses
-- `POST /users/addresses` - Add new address
-- `GET /users/addresses/{address_id}` - Get address details
-- `PUT /users/addresses/{address_id}` - Update address
-- `DELETE /users/addresses/{address_id}` - Delete address
-- `PUT /users/addresses/{address_id}/default` - Set default address
+### User Management
+- `POST /users/` - Create new user
+- `GET /users/{user_id}` - Get user by ID
+- `PUT /users/{user_id}` - Update user profile
+- `DELETE /users/{user_id}` - Soft delete user
+- `GET /users/` - List users with pagination
+- `GET /users/me` - Get current user profile
 
-### User Preferences
-- `GET /users/preferences` - Get user preferences
-- `PUT /users/preferences` - Update user preferences
-- `POST /users/preferences/reset` - Reset preferences to default
-- `GET /users/preferences/notifications` - Get notification preferences
-- `PUT /users/preferences/notifications` - Update notification preferences
+### Health & Monitoring
+- `GET /health` - Health check endpoint
+- `GET /docs` - Interactive API documentation (Swagger UI)
+- `GET /redoc` - Alternative API documentation (ReDoc)
 
-### User Analytics
-- `GET /users/analytics/activity` - Get user activity analytics
-- `GET /users/analytics/preferences` - Get preference analytics
-- `GET /users/analytics/engagement` - Get engagement metrics
-- `GET /users/analytics/segments` - Get user segmentation data
+## ⚙️ Environment Variables
 
-### User Management (Admin)
-- `GET /users` - List all users with pagination
-- `POST /users/bulk-update` - Bulk update users
-- `GET /users/search` - Search users
-- `POST /users/export` - Export user data
-- `GET /users/statistics` - User statistics
-
-## Environment Variables
-
-Create a `.env` file in the user_service directory:
+Create a `.env` file in the project root:
 
 ```env
-# Database
-DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/user_db
-
-# Application
+# Application Settings
 HOST=0.0.0.0
-PORT=8005
+PORT=8002
 DEBUG=true
+ENVIRONMENT=development
 
-# Redis
-REDIS_URL=redis://localhost:6379
+# Database Configuration
+DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/user_db
+DATABASE_POOL_SIZE=20
+DATABASE_MAX_OVERFLOW=30
+
+# Redis Configuration
+REDIS_URL=redis://localhost:6379/0
+REDIS_POOL_SIZE=10
 
 # JWT Configuration
-JWT_SECRET_KEY=your-jwt-secret-key
+JWT_SECRET_KEY=your-super-secret-jwt-key-here
 JWT_ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
+REFRESH_TOKEN_EXPIRE_DAYS=7
 
-# Service URLs
-AUTH_SERVICE_URL=http://localhost:8001
-NOTIFICATION_SERVICE_URL=http://localhost:8006
+# Google OAuth (Optional)
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+GOOGLE_REDIRECT_URI=http://localhost:8002/users/google/callback
 
-# User Configuration
-MAX_ADDRESSES_PER_USER=10
-PROFILE_IMAGE_MAX_SIZE=5242880  # 5MB
-ALLOWED_IMAGE_TYPES=jpg,jpeg,png,webp
-
-# Pagination
-DEFAULT_PAGE_SIZE=20
-MAX_PAGE_SIZE=100
-
-# Cache Configuration
-CACHE_TTL=3600
-USER_CACHE_PREFIX=user_profile
+# Security
+SECRET_KEY=your-super-secret-key-here
+ALGORITHM=HS256
 
 # Logging
 LOG_LEVEL=INFO
+LOG_FORMAT=json
 ```
 
-## Installation & Setup
+## 🚀 Quick Start
 
 ### Prerequisites
-- Python 3.8+
-- PostgreSQL
-- Redis
+
+- Python 3.11+
+- PostgreSQL 15+
+- Redis 7+
+- Docker & Docker Compose (optional)
 
 ### Local Development
 
 1. **Clone the repository**
    ```bash
+   git clone <repository-url>
    cd user_service
    ```
 
@@ -167,226 +155,213 @@ LOG_LEVEL=INFO
    # Edit .env with your configuration
    ```
 
-5. **Run database migrations**
+5. **Start PostgreSQL and Redis**
    ```bash
-   # Create tables (if using SQLAlchemy create_all)
-   python -c "from app.db.base import Base; from app.db.database import engine; Base.metadata.create_all(engine)"
+   # Using Docker
+   docker run -d --name postgres -e POSTGRES_PASSWORD=password -e POSTGRES_DB=user_db -p 5432:5432 postgres:15
+   docker run -d --name redis -p 6379:6379 redis:7-alpine
+   
+   # Or use your local installations
    ```
 
-6. **Start the service**
+6. **Run the application**
    ```bash
-   uvicorn main:app --reload --host 0.0.0.0 --port 8005
+   uvicorn main:app --reload --host 0.0.0.0 --port 8002
    ```
 
-### Docker
+7. **Access the API**
+   - API: http://localhost:8002
+   - Documentation: http://localhost:8002/docs
+   - Health Check: http://localhost:8002/health
 
-1. **Build the image**
-   ```bash
-   docker build -t user-service .
-   ```
+### Docker Development
 
-2. **Run the container**
-   ```bash
-   docker run -p 8005:8005 --env-file .env user-service
-   ```
-
-## Testing
-
-### Run all tests
 ```bash
+# Build development image
+docker build -f Dockerfile.dev -t user-service-dev .
+
+# Run with environment file
+docker run -p 8002:8002 --env-file .env user-service-dev
+
+# Or use docker-compose (if available)
+docker-compose up --build
+```
+
+### Production Deployment
+
+```bash
+# Build production image
+docker build -t user-service:latest .
+
+# Run production container
+docker run -d \
+  --name user-service \
+  -p 8002:8002 \
+  --env-file .env \
+  user-service:latest
+```
+
+## 🧪 Testing
+
+### Run Tests
+
+```bash
+# Run all tests
 pytest
-```
 
-### Run with coverage
-```bash
-pytest --cov=.
-```
+# Run with coverage
+pytest --cov=app --cov-report=html
 
-### Run specific test file
-```bash
+# Run specific test file
 pytest app/tests/test_user_api.py
+
+# Run with verbose output
+pytest -v
+
+# Run tests in parallel
+pytest -n auto
 ```
 
-### Run service tests
+### Test Coverage
+
 ```bash
-pytest app/tests/test_user_service.py
+# Generate coverage report
+pytest --cov=app --cov-report=html --cov-report=term-missing
+
+# View coverage report
+open htmlcov/index.html  # On macOS
+# or
+start htmlcov/index.html  # On Windows
 ```
 
-## API Documentation
+## 🔍 Code Quality
 
-Once the service is running, you can access:
-- **Swagger UI**: http://localhost:8005/docs
-- **ReDoc**: http://localhost:8005/redoc
-- **Health Check**: http://localhost:8005/health
+### Linting and Formatting
 
-## Database Schema
+```bash
+# Run all quality checks
+ruff check .
+black --check .
+mypy app/
 
-### Users Table
-- `id`: Primary key
-- `email`: User email address
-- `username`: Username
-- `first_name`: First name
-- `last_name`: Last name
-- `phone`: Phone number
-- `date_of_birth`: Date of birth
-- `gender`: Gender (male, female, other)
-- `profile_image`: Profile image URL
-- `is_active`: Account status
-- `created_at`: Account creation timestamp
-- `updated_at`: Last update timestamp
+# Auto-fix issues
+ruff check --fix .
+black .
+```
 
-### User Addresses Table
-- `id`: Primary key
-- `user_id`: Foreign key to users
-- `address_type`: Address type (home, work, other)
-- `is_default`: Default address flag
-- `street_address`: Street address
-- `city`: City
-- `state`: State/province
-- `postal_code`: Postal code
-- `country`: Country
-- `latitude`: GPS latitude
-- `longitude`: GPS longitude
-- `created_at`: Creation timestamp
-- `updated_at`: Last update timestamp
+### Security Checks
 
-### User Preferences Table
-- `id`: Primary key
-- `user_id`: Foreign key to users
-- `preference_key`: Preference key
-- `preference_value`: Preference value (JSON)
-- `created_at`: Creation timestamp
-- `updated_at`: Last update timestamp
+```bash
+# Run security linter
+bandit -r app/
 
-### User Activity Table
-- `id`: Primary key
-- `user_id`: Foreign key to users
-- `activity_type`: Activity type
-- `activity_data`: Activity data (JSON)
-- `ip_address`: User IP address
-- `user_agent`: User agent string
-- `created_at`: Activity timestamp
+# Check for vulnerable dependencies
+safety check
+```
 
-## User Profile Features
+## 🚀 CI/CD Pipeline
 
-### Profile Management
-- **Basic Information**: Name, email, phone, date of birth
-- **Profile Images**: Avatar upload and management
-- **Account Settings**: Password, email preferences
-- **Privacy Settings**: Data sharing preferences
+The project includes a comprehensive GitHub Actions CI/CD pipeline that:
 
-### Address Management
-- **Multiple Addresses**: Support for multiple addresses
-- **Address Types**: Home, work, delivery addresses
-- **Address Validation**: Geographic validation
-- **Default Address**: Primary address designation
-- **GPS Coordinates**: Location-based services
+### Automated Checks
+- **Linting**: Ruff, Black, Flake8
+- **Type Checking**: MyPy
+- **Security**: Bandit, Safety
+- **Testing**: Pytest with coverage
+- **Docker Build**: Multi-platform builds
 
-### User Preferences
-- **Language Preferences**: Interface language
-- **Currency Preferences**: Display currency
-- **Notification Settings**: Email, SMS, push preferences
-- **Privacy Settings**: Data sharing and visibility
-- **Theme Preferences**: UI theme and appearance
+### Deployment Stages
+- **Staging**: Automatic deployment on `develop` branch
+- **Production**: Manual deployment on `main` branch
 
-## User Analytics
+### Pipeline Features
+- Caching for faster builds
+- Parallel job execution
+- Multi-platform Docker images
+- Code coverage reporting
+- Security vulnerability scanning
 
-### Activity Tracking
-- **Login Activity**: Login history and patterns
-- **Profile Updates**: Profile modification tracking
-- **Address Changes**: Address update history
-- **Preference Changes**: Preference modification tracking
+## 📊 Monitoring & Health Checks
 
-### Engagement Metrics
-- **Profile Completeness**: Profile completion percentage
-- **Update Frequency**: Profile update frequency
-- **Address Usage**: Address usage patterns
-- **Preference Adoption**: Preference setting patterns
+### Health Endpoint
+```bash
+curl http://localhost:8002/health
+```
 
-### User Segmentation
-- **Demographic Segmentation**: Age, gender, location
-- **Behavioral Segmentation**: Activity patterns
-- **Preference Segmentation**: Preference-based groups
-- **Engagement Segmentation**: Engagement level groups
+Response:
+```json
+{
+  "status": "healthy",
+  "service": "user_service",
+  "timestamp": "2024-01-01T00:00:00Z",
+  "version": "1.0.0"
+}
+```
 
-## Integration Points
+### Metrics (Future Enhancement)
+- Request/response metrics
+- Database connection pool status
+- Redis connection status
+- Custom business metrics
 
-### Auth Service
-- User authentication and authorization
-- JWT token validation
-- User session management
+## 🔧 Configuration
 
-### Notification Service
-- Profile update notifications
-- Address change alerts
-- Preference update confirmations
+### Database Configuration
+The service supports both development and production database configurations:
 
-### Analytics Service
-- User behavior data
-- Profile analytics
-- Engagement metrics
+```python
+# Development
+DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/user_db
 
-## Security Features
+# Production with connection pooling
+DATABASE_URL=postgresql+asyncpg://user:password@host:5432/user_db?pool_size=20&max_overflow=30
+```
 
-- **Data Encryption**: Sensitive data encryption
-- **Input Validation**: Comprehensive input validation
-- **Access Control**: Role-based access control
-- **Audit Logging**: User activity audit trail
-- **Data Sanitization**: SQL injection prevention
+### Redis Configuration
+```python
+# Basic Redis
+REDIS_URL=redis://localhost:6379/0
 
-## Performance Features
+# Redis with authentication
+REDIS_URL=redis://:password@localhost:6379/0
 
-- **Caching**: Redis-based user profile caching
-- **Pagination**: Efficient data pagination
-- **Indexing**: Database indexes for fast queries
-- **Connection Pooling**: Database connection optimization
-- **Async Processing**: Background task processing
+# Redis Cluster
+REDIS_URL=redis://host1:6379,host2:6379,host3:6379/0
+```
 
-## Monitoring & Logging
-
-- **Health Checks**: `/health` endpoint for service monitoring
-- **User Activity Tracking**: Comprehensive activity logging
-- **Error Logging**: Detailed error logging for debugging
-- **Performance Metrics**: Query performance monitoring
-- **Business Metrics**: User engagement tracking
-
-## Data Export
-
-### Export Formats
-- **CSV**: Comma-separated values
-- **JSON**: JavaScript Object Notation
-- **Excel**: Microsoft Excel format
-
-### Export Features
-- **Filtered Exports**: Data filtering and selection
-- **Bulk Export**: Large dataset export
-- **Scheduled Exports**: Automated data export
-- **Privacy Compliance**: GDPR-compliant exports
-
-## Error Handling
-
-### Common Errors
-- **Invalid Data**: Data validation errors
-- **User Not Found**: User doesn't exist
-- **Permission Denied**: Insufficient permissions
-- **Duplicate Data**: Duplicate email/username
-- **Validation Errors**: Address validation failures
-
-### Error Recovery
-- **Graceful Degradation**: Service continues with partial data
-- **User-friendly Messages**: Clear error messages
-- **Retry Mechanisms**: Automatic retry for transient errors
-- **Fallback Values**: Default values for missing data
-
-## Contributing
+## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Run the test suite
-6. Submit a pull request
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-## License
+### Development Guidelines
+- Follow PEP 8 style guidelines
+- Write comprehensive tests
+- Update documentation
+- Ensure all CI checks pass
 
-This project is part of the Food & Fast E-Commerce platform. 
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🆘 Support
+
+For support and questions:
+- Create an issue in the repository
+- Check the API documentation at `/docs`
+- Review the test files for usage examples
+
+## 🔄 Changelog
+
+### v1.0.0 (2024-01-01)
+- Initial release
+- User CRUD operations
+- JWT authentication
+- Google OAuth integration
+- Redis caching
+- Comprehensive test suite
+- Docker support
+- CI/CD pipeline

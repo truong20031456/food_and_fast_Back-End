@@ -2,6 +2,7 @@
 Test configuration for auth service tests.
 """
 
+
 import pytest
 import asyncio
 from httpx import AsyncClient
@@ -10,7 +11,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from main import app
-from core.database import get_db, Base
+from shared.core.database import get_db, Base
 
 
 # Test database setup
