@@ -8,10 +8,10 @@ from contextlib import asynccontextmanager
 import sys
 import os
 
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-from shared.core.app import create_app
-from shared.core.config import get_service_settings
-from shared.core.database import get_database_manager
+# Local imports
+from core.app import create_auth_app
+from core.config import settings
+from core.database import get_database_manager
 from models.base import Base
 from controllers import (
     auth_router,
@@ -20,9 +20,6 @@ from controllers import (
     password_router,
     profile_router,
 )
-
-# Get service settings
-settings = get_service_settings("auth_service")
 
 # Import models to ensure they're registered
 from models import user  # This ensures User model is registered
@@ -38,8 +35,7 @@ async def startup_task():
 
 
 # Create the FastAPI app with standardized configuration
-app = create_app(
-    service_name="Auth Service",
+app = create_auth_app(
     settings=settings,
     routers=[auth_router, user_router, token_router, password_router, profile_router],
     startup_tasks=[startup_task],

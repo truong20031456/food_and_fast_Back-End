@@ -5,13 +5,7 @@ from fastapi import HTTPException, status
 from passlib.context import CryptContext
 from schemas.auth import LoginRequest, RegisterRequest, LoginResponse
 from utils.security import create_access_token, create_refresh_token
-import sys
-import os
-
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
-from shared.core.config import get_service_settings
-
-settings = get_service_settings("auth_service")
+from core.config import settings
 from services.user_service import UserService
 from services.token_service import TokenService
 from services.audit_service import AuditService
