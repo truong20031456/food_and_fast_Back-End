@@ -17,7 +17,7 @@ class AuditService:
         user_id: Optional[int],
         action: str,
         ip_address: str,
-        details: Optional[Dict[str, Any]] = None
+        details: Optional[Dict[str, Any]] = None,
     ) -> bool:
         """Log user action for audit purposes"""
         try:
@@ -28,12 +28,12 @@ class AuditService:
                 "user_id": user_id,
                 "action": action,
                 "ip_address": ip_address,
-                "details": details or {}
+                "details": details or {},
             }
-            
+
             logger.info(f"AUDIT: {log_entry}")
             return True
-            
+
         except Exception as e:
             logger.error(f"Failed to log audit entry: {e}")
             return False
@@ -43,7 +43,7 @@ class AuditService:
         event_type: str,
         user_id: Optional[int],
         ip_address: str,
-        details: Optional[Dict[str, Any]] = None
+        details: Optional[Dict[str, Any]] = None,
     ) -> bool:
         """Log security-related events"""
         try:
@@ -52,21 +52,18 @@ class AuditService:
                 "event_type": event_type,
                 "user_id": user_id,
                 "ip_address": ip_address,
-                "details": details or {}
+                "details": details or {},
             }
-            
+
             logger.warning(f"SECURITY: {log_entry}")
             return True
-            
+
         except Exception as e:
             logger.error(f"Failed to log security event: {e}")
             return False
 
     async def get_user_audit_logs(
-        self,
-        user_id: int,
-        limit: int = 50,
-        offset: int = 0
+        self, user_id: int, limit: int = 50, offset: int = 0
     ) -> list:
         """Get audit logs for a specific user"""
         try:
@@ -75,4 +72,4 @@ class AuditService:
             return []
         except Exception as e:
             logger.error(f"Failed to get user audit logs: {e}")
-            return [] 
+            return []
