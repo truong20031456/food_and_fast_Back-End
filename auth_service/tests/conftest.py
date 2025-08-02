@@ -2,7 +2,6 @@
 Test configuration for auth service tests.
 """
 
-
 import pytest
 import asyncio
 from httpx import AsyncClient

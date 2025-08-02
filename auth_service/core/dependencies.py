@@ -1,8 +1,14 @@
 from fastapi import Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy.orm import Session
 from typing import Annotated
+import sys
+import os
 
-from shared.core.database import get_db
+# Add path for shared modules
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
+
+from shared.core.database import get_db_session
 from services.user_service import UserService
 from services.token_service import TokenService
 from services.audit_service import AuditService
@@ -11,29 +17,33 @@ from utils.security import decode_access_token
 from schemas.user import UserRead
 
 
-async def get_user_service(db: AsyncSession = Depends(get_db)) -> UserService:
+async def get_db():
+    """Get database session dependency"""
+    async for session in get_db_session():
+        yield session
+
+
+async def get_user_service(db: Session = Depends(get_db)) -> UserService:
     """Get UserService instance"""
     return UserService(db)
 
 
-async def get_token_service(db: AsyncSession = Depends(get_db)) -> TokenService:
+async def get_token_service(db: Session = Depends(get_db)) -> TokenService:
     """Get TokenService instance"""
     return TokenService(db)
 
 
-async def get_audit_service(db: AsyncSession = Depends(get_db)) -> AuditService:
+async def get_audit_service(db: Session = Depends(get_db)) -> AuditService:
     """Get AuditService instance"""
     return AuditService(db)
 
 
-async def get_cache_service(db: AsyncSession = Depends(get_db)) -> CacheService:
+async def get_cache_service(db: Session = Depends(get_db)) -> CacheService:
     """Get CacheService instance"""
     return CacheService(db)
 
 
 # OAuth2 scheme for token authentication
-from fastapi.security import OAuth2PasswordBearer
-
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 

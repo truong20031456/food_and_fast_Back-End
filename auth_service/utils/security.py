@@ -3,7 +3,13 @@ from jose import JWTError, jwt
 from datetime import datetime, timedelta, UTC
 from typing import Optional
 
-from auth_service.core.config import settings  # Import settings
+import sys
+import os
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
+from shared.core.config import get_service_settings
+
+settings = get_service_settings("auth_service")
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

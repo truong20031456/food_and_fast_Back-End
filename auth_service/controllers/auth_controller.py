@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session  # Use Session for SQLAlchemy ORM
 from typing import Annotated
 
 
-from shared.core.database import get_db
+from core.dependencies import get_db
 from schemas.auth import (
     RegisterRequest,
     LoginRequest,
@@ -19,14 +19,14 @@ from services.user_service import UserService
 from services.token_service import TokenService
 from services.audit_service import AuditService
 from services.cache_service import CacheService
-from .dependencies import (
+from core.dependencies import (
     get_user_service,
     get_token_service,
     get_audit_service,
     get_cache_service,
 )
 
-from .dependencies import (
+from core.dependencies import (
     get_current_user,
 )  # Use get_current_user from core.dependencies
 

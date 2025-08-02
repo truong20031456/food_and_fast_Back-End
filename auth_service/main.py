@@ -5,10 +5,14 @@ from fastapi import FastAPI, APIRouter
 from sqlalchemy.ext.asyncio import AsyncSession
 from contextlib import asynccontextmanager
 
+import sys
+import os
+
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from shared.core.app import create_app
 from shared.core.config import get_service_settings
 from shared.core.database import get_database_manager
-from auth_service.models.base import Base
+from models.base import Base
 from controllers import (
     auth_router,
     user_router,

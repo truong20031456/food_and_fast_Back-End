@@ -3,7 +3,7 @@ from sqlalchemy import select, insert
 from typing import Optional, Dict, Any
 from datetime import datetime, timezone
 
-from auth_service.utils.logger import get_logger
+from utils.logger import get_logger
 
 logger = get_logger(__name__)
 

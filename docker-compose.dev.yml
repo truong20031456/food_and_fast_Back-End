@@ -63,6 +63,26 @@ services:
       timeout: 10s
       retries: 5
 
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: food_fast_rabbitmq_dev
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin123
+      RABBITMQ_DEFAULT_VHOST: /
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_dev_data:/var/lib/rabbitmq
+    networks:
+      - food_fast_dev_network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   # Development Services (with hot reload)
   api_gateway_dev:
     build:
@@ -78,6 +98,7 @@ services:
       - SERVICE_PORT=8000
       - DATABASE_URL=sqlite+aiosqlite:///./api_gateway.db
       - REDIS_URL=redis://redis:6379/0
+      - RABBITMQ_URL=amqp://admin:admin123@rabbitmq:5672/
       - AUTH_SERVICE_URL=http://auth_service_dev:8001
       - USER_SERVICE_URL=http://user_service_dev:8002
       - PRODUCT_SERVICE_URL=http://product_service_dev:8003
@@ -90,6 +111,8 @@ services:
       - ./shared:/app/shared
     depends_on:
       redis:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     networks:
       - food_fast_dev_network
@@ -109,6 +132,7 @@ services:
       - SERVICE_PORT=8001
       - DATABASE_URL=postgresql+asyncpg://postgres:password@postgres:5432/auth_service_db
       - REDIS_URL=redis://redis:6379/1
+      - RABBITMQ_URL=amqp://admin:admin123@rabbitmq:5672/
       - SECRET_KEY=auth-dev-secret-key
       - ALLOWED_ORIGINS=["http://localhost:3000", "http://localhost:8000"]
     volumes:
@@ -118,6 +142,8 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     networks:
       - food_fast_dev_network
@@ -137,6 +163,7 @@ services:
       - SERVICE_PORT=8002
       - DATABASE_URL=postgresql+asyncpg://postgres:password@postgres:5432/user_service_db
       - REDIS_URL=redis://redis:6379/2
+      - RABBITMQ_URL=amqp://admin:admin123@rabbitmq:5672/
     volumes:
       - ./user_service:/app
       - ./shared:/app/shared
@@ -144,6 +171,165 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - food_fast_dev_network
+    restart: unless-stopped
+
+  product_service_dev:
+    build:
+      context: ./product_service
+      dockerfile: Dockerfile.dev
+    container_name: food_fast_product_service_dev
+    ports:
+      - "8003:8003"
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - SERVICE_HOST=0.0.0.0
+      - SERVICE_PORT=8003
+      - DATABASE_URL=postgresql+asyncpg://postgres:password@postgres:5432/product_service_db
+      - REDIS_URL=redis://redis:6379/3
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - RABBITMQ_URL=amqp://admin:admin123@rabbitmq:5672/
+    volumes:
+      - ./product_service:/app
+      - ./shared:/app/shared
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - food_fast_dev_network
+    restart: unless-stopped
+
+  order_service_dev:
+    build:
+      context: ./order_service
+      dockerfile: Dockerfile.dev
+    container_name: food_fast_order_service_dev
+    ports:
+      - "8004:8004"
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - SERVICE_HOST=0.0.0.0
+      - SERVICE_PORT=8004
+      - DATABASE_URL=postgresql+asyncpg://postgres:password@postgres:5432/order_service_db
+      - REDIS_URL=redis://redis:6379/4
+      - RABBITMQ_URL=amqp://admin:admin123@rabbitmq:5672/
+    volumes:
+      - ./order_service:/app
+      - ./shared:/app/shared
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - food_fast_dev_network
+    restart: unless-stopped
+
+  payment_service_dev:
+    build:
+      context: ./payment_service
+      dockerfile: Dockerfile.dev
+    container_name: food_fast_payment_service_dev
+    ports:
+      - "8005:8005"
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - SERVICE_HOST=0.0.0.0
+      - SERVICE_PORT=8005
+      - DATABASE_URL=postgresql+asyncpg://postgres:password@postgres:5432/payment_service_db
+      - REDIS_URL=redis://redis:6379/5
+      - RABBITMQ_URL=amqp://admin:admin123@rabbitmq:5672/
+      - STRIPE_SECRET_KEY=sk_test_your_stripe_test_key
+      - STRIPE_PUBLIC_KEY=pk_test_your_stripe_test_key
+    volumes:
+      - ./payment_service:/app
+      - ./shared:/app/shared
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - food_fast_dev_network
+    restart: unless-stopped
+
+  notification_service_dev:
+    build:
+      context: ./notification_service
+      dockerfile: Dockerfile.dev
+    container_name: food_fast_notification_service_dev
+    ports:
+      - "8006:8006"
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - SERVICE_HOST=0.0.0.0
+      - SERVICE_PORT=8006
+      - DATABASE_URL=postgresql+asyncpg://postgres:password@postgres:5432/notification_service_db
+      - REDIS_URL=redis://redis:6379/6
+      - RABBITMQ_URL=amqp://admin:admin123@rabbitmq:5672/
+      - SMTP_HOST=smtp.gmail.com
+      - SMTP_PORT=587
+      - SMTP_USER=your-email@gmail.com
+      - SMTP_PASSWORD=your-app-password
+    volumes:
+      - ./notification_service:/app
+      - ./shared:/app/shared
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - food_fast_dev_network
+    restart: unless-stopped
+
+  analytics_service_dev:
+    build:
+      context: ./analytics_service
+      dockerfile: Dockerfile.dev
+    container_name: food_fast_analytics_service_dev
+    ports:
+      - "8007:8007"
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - SERVICE_HOST=0.0.0.0
+      - SERVICE_PORT=8007
+      - DATABASE_URL=postgresql+asyncpg://postgres:password@postgres:5432/analytics_service_db
+      - REDIS_URL=redis://redis:6379/7
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - RABBITMQ_URL=amqp://admin:admin123@rabbitmq:5672/
+    volumes:
+      - ./analytics_service:/app
+      - ./shared:/app/shared
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     networks:
       - food_fast_dev_network
@@ -193,6 +379,7 @@ volumes:
   postgres_dev_data:
   redis_dev_data:
   elasticsearch_dev_data:
+  rabbitmq_dev_data:
   prometheus_dev_data:
   grafana_dev_data:
 

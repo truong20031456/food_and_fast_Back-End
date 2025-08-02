@@ -4,13 +4,13 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from passlib.context import CryptContext
 from schemas.auth import LoginRequest, RegisterRequest, LoginResponse
-from auth_service.utils.security import create_access_token, create_refresh_token
-from auth_service.core.config import settings
+from utils.security import create_access_token, create_refresh_token
+from core.config import settings
 from services.user_service import UserService
 from services.token_service import TokenService
 from services.audit_service import AuditService
 from services.cache_service import CacheService
-from from utils.logger import get_logger  # Import logger
+from utils.logger import get_logger  # Import logger
 
 logger = get_logger(__name__)  # Initialize logger
 

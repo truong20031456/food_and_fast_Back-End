@@ -5,7 +5,7 @@ import sys
 import os
 
 # Add shared modules to path
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "shared"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from shared.models.base import Base, BaseDBModel, TimestampMixin, UUIDMixin
 from sqlalchemy import Column, Integer, Boolean

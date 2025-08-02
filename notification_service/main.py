@@ -55,6 +55,7 @@ async def lifespan(app: FastAPI):
 
         # Test database connection
         from shared.core.database import db_manager
+
         db_healthy = await db_manager.health_check()
         if not db_healthy:
             logger.error("Failed to connect to database")
@@ -123,6 +124,7 @@ async def health_check():
     """Health check endpoint."""
     try:
         from shared.core.database import db_manager
+
         db_healthy = await db_manager.health_check()
 
         status = "healthy" if db_healthy else "unhealthy"

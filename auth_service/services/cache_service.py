@@ -4,8 +4,14 @@ from datetime import timedelta
 import redis.asyncio as redis
 import json
 
-from auth_service.core.config import settings
-from auth_service.utils.logger import get_logger
+import sys
+import os
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
+from shared.core.config import get_service_settings
+
+settings = get_service_settings("auth_service")
+from utils.logger import get_logger
 
 logger = get_logger(__name__)
 

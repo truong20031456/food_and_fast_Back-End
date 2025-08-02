@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  # Override user service for development
+  user_service_dev:
+    environment:
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+      - ENVIRONMENT=development
+    volumes:
+      - .:/app
+      - /app/__pycache__
+      - /app/.pytest_cache
+      - /app/.ruff_cache
+    command: uvicorn main:app --host 0.0.0.0 --port 8002 --reload --reload-dir /app
+
+  # Add development tools
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: user_service_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - user_service_network
+    profiles:
+      - dev-tools
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: user_service_redis_commander
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+    networks:
+      - user_service_network
+    profiles:
+      - dev-tools 
