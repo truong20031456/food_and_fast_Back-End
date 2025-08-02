@@ -6,10 +6,7 @@ import os
 from typing import AsyncGenerator
 import logging
 
-# Add shared modules to path
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "shared"))
-
-from core.database import get_database_manager, get_db_session, init_database
+from shared.core.database import get_database_manager, get_db_session, init_database
 from models.base import Base
 from .config import settings
 
