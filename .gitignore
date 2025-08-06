@@ -40,6 +40,7 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 cover/
+*.env
 
 # Environment Variables - DO NOT COMMIT
 .claude/
