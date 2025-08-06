@@ -1,44 +1,47 @@
-from fastapi import FastAPI, HTTPException, Depends
-from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
-from contextlib import asynccontextmanager
-import uvicorn
+import sys
 import os
 
-from core.database import engine, get_db, Base
+# Add parent directory and shared modules to path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.abspath(os.path.join(current_dir, ".."))
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+
+from shared_code.core.app import create_app
+from shared_code.core.config import get_service_settings
+from shared_code.utils.logging import get_logger
+
 from controllers.cart_controller import router as cart_router
 from controllers.order_controller import router as order_router
+from core.database import engine, Base
 
-# Create tables only when running the application
-Base.metadata.create_all(bind=engine)
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Startup
-    print("Order Service starting up...")
-    yield
-    # Shutdown
-    print("Order Service shutting down...")
+logger = get_logger(__name__)
+settings = get_service_settings("order_service")
 
 
-app = FastAPI(
-    title="Food Fast - Order Service",
-    description="Microservice for managing shopping carts and orders",
-    version="1.0.0",
-    lifespan=lifespan,
+async def startup_task():
+    """Order service startup tasks"""
+    logger.info("Order Service starting up...")
+    # Create database tables
+    Base.metadata.create_all(bind=engine)
+    logger.info("Database tables created successfully")
+
+
+async def shutdown_task():
+    """Order service shutdown tasks"""
+    logger.info("Order Service shutting down...")
+
+
+# Create the FastAPI app with standardized configuration
+app = create_app(
+    service_name="Order Service",
+    settings=settings,
+    routers=[cart_router, order_router],
+    startup_tasks=[startup_task],
+    shutdown_tasks=[shutdown_task],
 )
 
-# CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Include routers
+# Add service-specific routes with prefixes
 app.include_router(cart_router, prefix="/api/v1/cart", tags=["Cart"])
 app.include_router(order_router, prefix="/api/v1/orders", tags=["Orders"])
 
@@ -54,6 +57,11 @@ async def health_check():
 
 
 if __name__ == "__main__":
+    import uvicorn
+
     uvicorn.run(
-        "main:app", host="0.0.0.0", port=int(os.getenv("PORT", 8004)), reload=True
+        "main:app",
+        host=settings.SERVICE_HOST,
+        port=settings.SERVICE_PORT,
+        reload=settings.DEBUG,
     )

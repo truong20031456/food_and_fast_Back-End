@@ -1,7 +1,7 @@
 # Import config to setup paths
 from app import config
 
-from shared.utils.logging import get_logger
+from shared_code.utils.logging import get_logger
 from app.services.service_registry import service_registry
 
 logger = get_logger(__name__)

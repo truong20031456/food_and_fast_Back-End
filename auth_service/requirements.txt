@@ -1,76 +1,20 @@
-# FastAPI Core
-fastapi[standard]
-uvicorn[standard]
+fastapi
+uvicorn
+psycopg2-binary
+sqlalchemy
+asyncpg
 alembic
-# Authentication & Security
-python-jose[cryptography]
-passlib[bcrypt]
-python-multipart
-bcrypt
-Pillow  # for image processing
-
-# Google OAuth
-google-auth
-google-auth-oauthlib
-google-auth-httplib2
-requests-oauthlib
-
-# Database
-SQLAlchemy
-alembic
-asyncpg  # PostgreSQL async driver
-psycopg2-binary  # PostgreSQL sync driver
-
-# Redis for caching/sessions
-redis
-aioredis
-
-# Environment & Configuration
 python-dotenv
+bcrypt
+PyJWT
+requests
+google-auth
+google-api-python-client
+passlib
+redis
+httpx
+python-jose
 pydantic
 pydantic-settings
-
-# HTTP Client
-httpx
-aiohttp
-
-# Email
-fastapi-mail
-
-# Validation & Serialization
-email-validator
-phonenumbers
-
-# Logging
-structlog
-
-# Testing
-pytest
-pytest-asyncio
-pytest-cov
-httpx  # for testing
-
-# Development
-black
-flake8
-mypy
-pre-commit
-
-# Monitoring (optional)
-prometheus-client
-sentry-sdk[fastapi]
-
-# CORS
-fastapi-cors
-
-# Rate Limiting
-slowapi
-
-# JWT handling
-PyJWT
-
-# Time handling
-python-dateutil
-pytz
-
-ruff
+pyotp
+qrcode

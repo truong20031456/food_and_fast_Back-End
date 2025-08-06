@@ -1,5 +1,14 @@
 # User profile models
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, func
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Boolean,
+    DateTime,
+    ForeignKey,
+    func,
+    Date,
+)
 from sqlalchemy.orm import relationship
 from app.db.database import Base
 
@@ -27,7 +36,7 @@ class UserProfile(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     full_name = Column(String(100), nullable=True)
-    date_of_birth = Column(String(10), nullable=True)
+    date_of_birth = Column(Date, nullable=True)
     bio = Column(String(500), nullable=True)
     location = Column(String(100), nullable=True)
     avatar_url = Column(String(200), nullable=True)

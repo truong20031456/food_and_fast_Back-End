@@ -1,402 +1,163 @@
-# API Gateway
+# API Gateway - Food & Fast
 
-## Overview
+## 1. Tổng quan
 
-The API Gateway is a microservice that serves as the single entry point for all client requests in the Food & Fast E-Commerce platform. It handles request routing, authentication, rate limiting, request/response transformation, and provides a unified API interface for all backend services.
+API Gateway là cửa ngõ trung tâm cho toàn bộ nền tảng microservices của Food & Fast. Nó đóng vai trò là điểm vào duy nhất (single entry point) cho tất cả các yêu cầu từ client (web, mobile).
 
-## Features
+**Các trách nhiệm chính:**
 
-- 🚪 **Request Routing**: Intelligent routing to appropriate microservices
-- 🔐 **Authentication**: Centralized authentication and authorization
-- 🛡️ **Security**: Rate limiting, CORS, and security headers
-- 📊 **Monitoring**: Request/response logging and metrics
-- 🔄 **Load Balancing**: Request distribution across service instances
-- 📝 **Request Transformation**: Request/response modification and validation
-- 🚨 **Error Handling**: Centralized error handling and response formatting
-- 📱 **API Versioning**: Support for multiple API versions
+- **Định tuyến (Routing):** Định tuyến động các yêu cầu đến các microservice phù hợp dựa trên đường dẫn (path).
+- **Xác thực & Phân quyền (Authentication & Authorization):** Đảm bảo chỉ những yêu cầu hợp lệ và đã được xác thực mới có thể truy cập vào các tài nguyên được bảo vệ.
+- **Tổng hợp & Giao tiếp:** Giao tiếp với các service nội bộ và trả về phản hồi cho client.
+- **Giám sát & Bảo mật:** Cung cấp một lớp bảo vệ, giám sát và ghi log tập trung.
 
-## Tech Stack
+---
 
-- **Framework**: FastAPI
-- **Proxy**: HTTPX for service communication
-- **Authentication**: JWT token validation
-- **Rate Limiting**: Redis-based rate limiting
-- **Monitoring**: Prometheus metrics
-- **Validation**: Pydantic
-- **Testing**: pytest
+## 2. Các tính năng cốt lõi
 
-## Project Structure
+- **Dynamic Request Routing:** Tự động chuyển tiếp các yêu cầu đến các service tương ứng (Auth, User, Product, Order, v.v.) thông qua một cơ chế service registry.
+- **Centralized Authentication:** Kiểm tra JWT token trên các route yêu cầu xác thực trước khi chuyển tiếp.
+- **Service Discovery & Health Checks:** Tự động kiểm tra "sức khỏe" của các downstream services. Tích hợp cơ chế caching (sử dụng Redis) để giảm thiểu số lần health check không cần thiết.
+- **Circuit Breaker Pattern:** Tự động "ngắt mạch" các yêu cầu đến một service nếu service đó liên tục báo lỗi, giúp ngăn ngừa lỗi hàng loạt (cascading failures) và cho phép service có thời gian phục hồi.
+- **Observability:** Tự động thêm các header quan trọng vào mỗi yêu cầu (`X-Request-ID`, `X-Client-IP`, `X-User-ID`) để phục vụ cho việc logging và distributed tracing.
 
-```
-api_gateway/
-├── config/              # Configuration files
-│   └── settings.py     # Application settings
-├── middleware/          # Custom middleware
-│   └── auth.py         # Authentication middleware
-├── routes/              # API route handlers
-│   └── router.py       # Main router configuration
-├── services/            # Service integrations
-├── utils/               # Utility functions
-├── main.py             # FastAPI application entry point
-├── requirements.txt    # Python dependencies
-└── Dockerfile         # Docker configuration
-```
+---
 
-## API Endpoints
+## 3. Hướng dẫn cài đặt và chạy Local
 
-### Authentication Routes
-- `POST /auth/register` - User registration
-- `POST /auth/login` - User login
-- `POST /auth/logout` - User logout
-- `POST /auth/refresh` - Token refresh
-- `POST /auth/forgot-password` - Password reset request
-- `POST /auth/reset-password` - Password reset
+### Yêu cầu
+- Python 3.11+
+- Docker (để chạy Redis)
+- Một virtual environment (ví dụ: `venv`)
 
-### Product Routes
-- `GET /products` - List products
-- `GET /products/{product_id}` - Get product details
-- `POST /products` - Create product (admin)
-- `PUT /products/{product_id}` - Update product (admin)
-- `DELETE /products/{product_id}` - Delete product (admin)
-- `GET /products/search` - Search products
-- `GET /categories` - List categories
-- `GET /categories/{category_id}/products` - Get products by category
+### Các bước cài đặt
+1.  **Clone a repository:**
+    ```bash
+    git clone https://github.com/your-username/food-fast-ecommerce.git
+    cd food-fast-ecommerce/api_gateway
+    ```
 
-### Order Routes
-- `GET /orders` - List user orders
-- `GET /orders/{order_id}` - Get order details
-- `POST /orders` - Create order
-- `PUT /orders/{order_id}/cancel` - Cancel order
-- `GET /cart` - Get shopping cart
-- `POST /cart/items` - Add item to cart
-- `PUT /cart/items/{item_id}` - Update cart item
-- `DELETE /cart/items/{item_id}` - Remove cart item
+2.  **Tạo và kích hoạt môi trường ảo:**
+    ```bash
+    # Dành cho macOS/Linux
+    python3 -m venv venv
+    source venv/bin/activate
 
-### Payment Routes
-- `POST /payments/create` - Create payment
-- `POST /payments/confirm` - Confirm payment
-- `GET /payments/{payment_id}` - Get payment details
-- `POST /payments/{payment_id}/refund` - Process refund
-- `GET /payment-methods` - List payment methods
+    # Dành cho Windows
+    python -m venv venv
+    .\venv\Scripts\activate
+    ```
 
-### User Routes
-- `GET /users/profile` - Get user profile
-- `PUT /users/profile` - Update user profile
-- `GET /users/addresses` - Get user addresses
-- `POST /users/addresses` - Add address
-- `PUT /users/addresses/{address_id}` - Update address
-- `DELETE /users/addresses/{address_id}` - Delete address
+3.  **Cài đặt các dependencies:**
+    ```bash
+    pip install -r requirements.txt
+    ```
 
-### Notification Routes
-- `GET /notifications` - Get user notifications
-- `POST /notifications/mark-read` - Mark notification as read
-- `PUT /notifications/preferences` - Update notification preferences
+4.  **Cấu hình biến môi trường:**
+    -   Sao chép file `.env.example` thành `.env`.
+    -   Cập nhật các giá trị trong file `.env` cho phù hợp với môi trường local của bạn. Xem chi tiết ở mục **Biến môi trường**.
 
-### Analytics Routes
-- `GET /analytics/overview` - Business overview
-- `GET /analytics/sales` - Sales analytics
-- `GET /analytics/users` - User analytics
-- `GET /analytics/products` - Product analytics
+5.  **Chạy Redis (sử dụng Docker):**
+    ```bash
+    docker run -d -p 6379:6379 --name redis-gateway redis:7-alpine
+    ```
 
-## Environment Variables
+6.  **Chạy API Gateway:**
+    ```bash
+    uvicorn app.main:app --reload --port 8000
+    ```
+    Service sẽ chạy tại `http://localhost:8000`.
 
-Create a `.env` file in the api_gateway directory:
+---
 
-```env
-# Application
-HOST=0.0.0.0
-PORT=8000
-DEBUG=true
+## 4. Chạy kiểm thử (Tests)
 
-# Service URLs
-AUTH_SERVICE_URL=http://localhost:8001
-PRODUCT_SERVICE_URL=http://localhost:8002
-ORDER_SERVICE_URL=http://localhost:8003
-PAYMENT_SERVICE_URL=http://localhost:8004
-USER_SERVICE_URL=http://localhost:8005
-NOTIFICATION_SERVICE_URL=http://localhost:8006
-ANALYTICS_SERVICE_URL=http://localhost:8007
+Để đảm bảo chất lượng code, hãy chạy bộ kiểm thử tự động. Cần có một instance Redis đang chạy để thực hiện test.
 
-# Authentication
-JWT_SECRET_KEY=your-jwt-secret-key
-JWT_ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-
-# Redis
-REDIS_URL=redis://localhost:6379
-
-# Rate Limiting
-RATE_LIMIT_PER_MINUTE=60
-RATE_LIMIT_PER_HOUR=1000
-RATE_LIMIT_PER_DAY=10000
-
-# CORS
-CORS_ORIGINS=["http://localhost:3000", "https://yourdomain.com"]
-CORS_ALLOW_CREDENTIALS=true
-
-# Timeout Configuration
-REQUEST_TIMEOUT_SECONDS=30
-SERVICE_TIMEOUT_SECONDS=10
-
-# Logging
-LOG_LEVEL=INFO
-LOG_FORMAT=json
-
-# Monitoring
-ENABLE_METRICS=true
-METRICS_PORT=9090
-```
-
-## Installation & Setup
-
-### Prerequisites
-- Python 3.8+
-- Redis
-
-### Local Development
-
-1. **Clone the repository**
-   ```bash
-   cd api_gateway
-   ```
-
-2. **Create virtual environment**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-3. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Set up environment variables**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
-   ```
-
-5. **Start the service**
-   ```bash
-   uvicorn main:app --reload --host 0.0.0.0 --port 8000
-   ```
-
-### Docker
-
-1. **Build the image**
-   ```bash
-   docker build -t api-gateway .
-   ```
-
-2. **Run the container**
-   ```bash
-   docker run -p 8000:8000 --env-file .env api-gateway
-   ```
-
-## Testing
-
-### Run all tests
 ```bash
-pytest
+pytest -v --cov=.
 ```
 
-### Run with coverage
+---
+
+## 5. API Endpoints
+
+Dưới đây là các endpoint chính do API Gateway quản lý.
+
+| Method | Endpoint | Mô tả | Yêu cầu xác thực |
+| :--- | :--- | :--- | :--- |
+| `ANY` | `/{path:path}` | **Proxy chính.** Chuyển tiếp tất cả các yêu cầu đến service tương ứng. | **Có** (trừ các path public) |
+| `GET` | `/services/health` | Kiểm tra "sức khỏe" của tất cả các downstream services. | Không |
+| `GET` | `/services` | Liệt kê tất cả các service đã đăng ký và các route của chúng. | Không |
+| `POST` | `/auth/google` | Chuyển tiếp yêu cầu đăng nhập bằng Google đến `auth_service`. | Không |
+| `GET` | `/auth/google/auth-url` | Lấy URL xác thực của Google từ `auth_service`. | Không |
+| `POST` | `/auth/google/callback` | Xử lý callback từ Google sau khi xác thực thành công. | Không |
+
+---
+
+## 6. Biến môi trường (Environment Variables)
+
+Các biến này cần được định nghĩa trong file `.env` để service có thể hoạt động.
+
+| Tên biến | Mô tả | Ví dụ |
+| :--- | :--- | :--- |
+| `PYTHONPATH` | Thêm thư mục gốc của dự án vào Python path để import `shared_code`. | `.` |
+| `SECRET_KEY` | Khóa bí mật chung cho các hoạt động mã hóa nội bộ. | `your-very-secret-key` |
+| `JWT_SECRET_KEY` | **QUAN TRỌNG:** Khóa bí mật dùng để ký và xác thực JWT. **PHẢI GIỐNG NHAU** ở tất cả 8 services. | `your-shared-jwt-secret-key` |
+| `REDIS_URL` | URL để kết nối đến Redis (dùng cho caching health check). | `redis://localhost:6379/0` |
+| `AUTH_SERVICE_URL` | URL của Auth Service. | `http://localhost:8001` |
+| `USER_SERVICE_URL` | URL của User Service. | `http://localhost:8002` |
+| `PRODUCT_SERVICE_URL` | URL của Product Service. | `http://localhost:8003` |
+| `ORDER_SERVICE_URL` | URL của Order Service. | `http://localhost:8004` |
+| `PAYMENT_SERVICE_URL` | URL của Payment Service. | `http://localhost:8005` |
+| `NOTIFICATION_SERVICE_URL` | URL của Notification Service. | `http://localhost:8006` |
+| `ANALYTICS_SERVICE_URL` | URL của Analytics Service. | `http://localhost:8007` |
+| `REQUEST_TIMEOUT` | Thời gian chờ (giây) tối đa cho một yêu cầu chuyển tiếp. | `30.0` |
+| `HEALTH_CHECK_TIMEOUT` | Thời gian chờ (giây) tối đa cho một lần kiểm tra health check. | `5.0` |
+
+---
+
+## 7. Quy trình CI/CD
+
+Pipeline CI/CD cho API Gateway được định nghĩa trong `.github/workflows/ci-api_gateway.yml` và bao gồm các bước chính sau:
+
+1.  **Lint & Format:** Kiểm tra code style với `black` và `flake8`, kiểm tra type-hinting với `mypy`.
+2.  **Security Scan:** Quét lỗ hổng bảo mật với `bandit` và kiểm tra các dependency không an toàn với `safety`.
+3.  **Run Tests:** Chạy bộ unit test và integration test với `pytest` và tạo báo cáo độ bao phủ code (coverage report).
+4.  **Docker Build:** Xây dựng Docker image và chạy một bài test đơn giản trên container.
+5.  **Build & Push:** (Khi push lên các nhánh `main`, `develop`) Build và đẩy Docker image lên Docker Hub.
+6.  **Deploy:** (Tương lai) Tự động deploy lên môi trường Staging hoặc Production.
+
+---
+
+## 8. JWT_SECRET_KEY - Quan trọng!
+
+**JWT_SECRET_KEY phải được cấu hình giống nhau ở tất cả 8 services:**
+
+- **API Gateway** (Port 8000)
+- **Auth Service** (Port 8001) 
+- **User Service** (Port 8002)
+- **Product Service** (Port 8003)
+- **Order Service** (Port 8004)
+- **Payment Service** (Port 8005)
+- **Notification Service** (Port 8006)
+- **Analytics Service** (Port 8007)
+
+### Tại sao cần dùng chung?
+
+1. **Token Validation**: API Gateway cần validate JWT token trước khi forward request
+2. **Cross-Service Auth**: Các services khác cần validate token để xác thực user
+3. **Microservices Security**: Tất cả services phải "tin tưởng" cùng một secret key
+
+### Cách triển khai:
+
 ```bash
-pytest --cov=.
+# Trong tất cả .env files của 8 services
+JWT_SECRET_KEY=your-super-secret-jwt-key-that-must-be-identical
 ```
 
-### Run specific test file
-```bash
-pytest tests/test_routing.py
-```
+---
 
-## API Documentation
+## 9. Đóng góp
 
-Once the service is running, you can access:
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
-- **Health Check**: http://localhost:8000/health
-
-## Request Flow
-
-### 1. Request Reception
-- Client sends request to API Gateway
-- Request validation and parsing
-- Authentication token extraction
-
-### 2. Authentication & Authorization
-- JWT token validation
-- User permission verification
-- Rate limiting check
-
-### 3. Request Routing
-- Service identification based on route
-- Load balancing (if multiple instances)
-- Request forwarding to appropriate service
-
-### 4. Response Processing
-- Service response reception
-- Response transformation (if needed)
-- Error handling and formatting
-
-### 5. Response Delivery
-- Response validation
-- CORS headers addition
-- Response delivery to client
-
-## Service Routing
-
-### Route Configuration
-```python
-# Example route configuration
-ROUTES = {
-    "/auth": "http://auth-service:8001",
-    "/products": "http://product-service:8002",
-    "/orders": "http://order-service:8003",
-    "/payments": "http://payment-service:8004",
-    "/users": "http://user-service:8005",
-    "/notifications": "http://notification-service:8006",
-    "/analytics": "http://analytics-service:8007"
-}
-```
-
-### Route Patterns
-- **Exact Match**: `/auth/login`
-- **Path Parameters**: `/products/{product_id}`
-- **Query Parameters**: `/products?category=electronics`
-- **Wildcard Routes**: `/api/v1/*`
-
-## Authentication & Authorization
-
-### JWT Token Validation
-- Token signature verification
-- Token expiration check
-- User permission validation
-- Token refresh handling
-
-### Role-Based Access Control
-- **Public Routes**: No authentication required
-- **User Routes**: Authenticated user access
-- **Admin Routes**: Admin-only access
-- **Service Routes**: Internal service communication
-
-### Rate Limiting
-- **Per User**: Individual user rate limits
-- **Per IP**: IP-based rate limiting
-- **Per Endpoint**: Endpoint-specific limits
-- **Global Limits**: Overall API limits
-
-## Security Features
-
-### Request Security
-- **Input Validation**: Request data validation
-- **SQL Injection Prevention**: Parameter sanitization
-- **XSS Prevention**: Content security headers
-- **CSRF Protection**: Cross-site request forgery protection
-
-### Response Security
-- **CORS Headers**: Cross-origin resource sharing
-- **Security Headers**: Security-related HTTP headers
-- **Content Type Validation**: Response content validation
-- **Error Information Sanitization**: Safe error messages
-
-### Monitoring & Logging
-- **Request Logging**: Comprehensive request logs
-- **Error Tracking**: Error monitoring and alerting
-- **Performance Metrics**: Response time tracking
-- **Security Events**: Security incident logging
-
-## Error Handling
-
-### Error Types
-- **Authentication Errors**: Invalid tokens, expired sessions
-- **Authorization Errors**: Insufficient permissions
-- **Validation Errors**: Invalid request data
-- **Service Errors**: Backend service failures
-- **Network Errors**: Connection timeouts, service unavailable
-
-### Error Response Format
-```json
-{
-  "error": {
-    "code": "AUTHENTICATION_FAILED",
-    "message": "Invalid authentication token",
-    "details": "Token has expired",
-    "timestamp": "2024-01-01T12:00:00Z",
-    "request_id": "req_123456789"
-  }
-}
-```
-
-### Error Recovery
-- **Retry Logic**: Automatic retry for transient errors
-- **Circuit Breaker**: Service failure protection
-- **Fallback Responses**: Graceful degradation
-- **Error Aggregation**: Error pattern analysis
-
-## Performance Features
-
-### Caching
-- **Response Caching**: Cache frequently requested data
-- **Token Caching**: Cache validated tokens
-- **Route Caching**: Cache route configurations
-- **Rate Limit Caching**: Cache rate limit counters
-
-### Load Balancing
-- **Round Robin**: Simple load distribution
-- **Least Connections**: Connection-based balancing
-- **Health Check**: Service health monitoring
-- **Failover**: Automatic service failover
-
-### Connection Pooling
-- **HTTP Connection Pooling**: Reuse HTTP connections
-- **Database Connection Pooling**: Database connection management
-- **Redis Connection Pooling**: Redis connection optimization
-
-## Monitoring & Metrics
-
-### Health Checks
-- **Service Health**: Individual service health monitoring
-- **Dependency Health**: Database, Redis health checks
-- **Response Time**: Service response time tracking
-- **Error Rates**: Error rate monitoring
-
-### Metrics Collection
-- **Request Count**: Total request count
-- **Response Time**: Average response time
-- **Error Rate**: Error percentage
-- **Throughput**: Requests per second
-
-### Logging
-- **Request Logs**: Detailed request information
-- **Error Logs**: Error details and stack traces
-- **Access Logs**: User access patterns
-- **Performance Logs**: Performance metrics
-
-## API Versioning
-
-### Version Strategies
-- **URL Versioning**: `/api/v1/products`
-- **Header Versioning**: `Accept: application/vnd.api+json;version=1`
-- **Query Parameter**: `/products?version=1`
-- **Content Negotiation**: Multiple content types
-
-### Version Management
-- **Backward Compatibility**: Maintain old versions
-- **Deprecation Notices**: Version deprecation warnings
-- **Migration Support**: Version migration assistance
-- **Documentation**: Version-specific documentation
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Run the test suite
-6. Submit a pull request
-
-## License
-
-This project is part of the Food & Fast E-Commerce platform. 
+Nếu bạn muốn đóng góp, vui lòng tạo một Issue để thảo luận hoặc một Pull Request với những thay đổi của bạn.

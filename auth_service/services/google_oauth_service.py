@@ -18,7 +18,7 @@ import sys
 import os
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
-from shared.core.config import get_service_settings
+from shared_code.core.config import get_service_settings
 
 settings = get_service_settings("auth_service")
 

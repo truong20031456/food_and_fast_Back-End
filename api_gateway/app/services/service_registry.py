@@ -6,13 +6,12 @@ from typing import Dict, Optional
 from datetime import datetime
 import logging
 
-from shared.core.config import get_service_settings
-from shared.utils.redis import get_redis_manager
-from shared.utils.logging import get_logger
+from shared_code.utils.redis import get_redis_manager
+from shared_code.utils.logging import get_logger
+from app.config import settings
 import httpx
 
 logger = get_logger(__name__)
-settings = get_service_settings("api_gateway")
 
 
 class ServiceRegistry:
@@ -37,6 +36,11 @@ class ServiceRegistry:
             "/analytics": "analytics",
         }
 
+        # Pre-sort route mappings for faster lookup (longest first)
+        self._sorted_route_mappings = sorted(
+            self.route_mappings.items(), key=lambda x: len(x[0]), reverse=True
+        )
+
         self.health_cache = {}
         self.cache_duration = 30  # seconds
         self.circuit_breakers = {}  # Track failed services
@@ -45,10 +49,9 @@ class ServiceRegistry:
         return self.services.get(service_name)
 
     def get_service_by_path(self, path: str) -> Optional[str]:
-        # Optimize path matching with sorted mappings for faster lookup
-        for route_prefix in sorted(self.route_mappings.keys(), key=len, reverse=True):
+        # Use pre-sorted mappings for faster lookup
+        for route_prefix, service_name in self._sorted_route_mappings:
             if path.startswith(route_prefix):
-                service_name = self.route_mappings[route_prefix]
                 return self.get_service_url(service_name)
         return None
 
@@ -65,7 +68,9 @@ class ServiceRegistry:
         # Circuit breaker: Skip health check if service has failed recently
         if service_name in self.circuit_breakers:
             last_failure = self.circuit_breakers[service_name]
-            if (datetime.now() - last_failure).seconds < 60:  # 1 minute cooldown
+            if (
+                datetime.now() - last_failure
+            ).total_seconds() < 60:  # 1 minute cooldown
                 logger.debug(f"Circuit breaker open for {service_name}")
                 await redis_manager.set(
                     cache_key, False, expire=10

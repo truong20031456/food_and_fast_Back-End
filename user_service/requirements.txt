@@ -1,25 +1,16 @@
-fastapi==0.104.1
-uvicorn==0.23.2
-sqlalchemy==2.0.23
-sqlalchemy-utils==0.37.8
+fastapi
+uvicorn
+psycopg2-binary
+sqlalchemy
 asyncpg
-psycopg2-binary==2.9.9
-pydantic==2.6.2
-python-dotenv==1.0.0
-ruff
-email-validator
-pyjwt==2.8.0
-pytest
+alembic
+python-dotenv
+bcrypt
+requests
 pydantic
-passlib[bcrypt]
+pydantic-settings
+passlib
+python-jose
 redis
-# Test dependencies
-pytest-asyncio
-pytest-cov
 httpx
-# Linting and formatting
-black
-flake8
-mypy
-bandit
-safety
+aiosqlite

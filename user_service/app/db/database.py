@@ -1,7 +1,6 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
-
-DATABASE_URL = "postgresql+asyncpg://truong:truong123@localhost:5432/user_service_db"
+from app.config import DATABASE_URL
 
 engine = create_async_engine(DATABASE_URL, echo=True)
 AsyncSessionLocal = sessionmaker(
@@ -11,7 +10,12 @@ AsyncSessionLocal = sessionmaker(
 Base = declarative_base()
 
 
-# Dependency cho FastAPI
+# Dependency for FastAPI
 async def get_db():
-    async with AsyncSessionLocal() as session:
-        yield session
+    try:
+        async with AsyncSessionLocal() as session:
+            yield session
+    except Exception as e:
+        # Log the error and re-raise
+        print(f"Database connection error: {e}")
+        raise

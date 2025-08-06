@@ -1,7 +1,12 @@
+# Alert Rules for Food Fast E-commerce
+# Prometheus Alerting Rules
+
 groups:
-  - name: food_fast_alerts
+  # ======================================
+  # Service Health Alerts
+  # ======================================
+  - name: service_health
     rules:
-      # Service Health Alerts
       - alert: ServiceDown
         expr: up == 0
         for: 1m
@@ -9,84 +14,200 @@ groups:
           severity: critical
         annotations:
           summary: "Service {{ $labels.job }} is down"
-          description: "Service {{ $labels.job }} has been down for more than 1 minute."
+          description: "Service {{ $labels.job }} on {{ $labels.instance }} has been down for more than 1 minute."
 
-      # High Response Time Alerts
-      - alert: HighResponseTime
-        expr: http_request_duration_seconds{quantile="0.95"} > 2
-        for: 5m
-        labels:
-          severity: warning
-        annotations:
-          summary: "High response time for {{ $labels.job }}"
-          description: "95th percentile response time is above 2 seconds for {{ $labels.job }}"
-
-      # High Error Rate Alerts
       - alert: HighErrorRate
         expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
-        for: 2m
-        labels:
-          severity: critical
-        annotations:
-          summary: "High error rate for {{ $labels.job }}"
-          description: "Error rate is above 5% for {{ $labels.job }}"
-
-      # Database Connection Issues
-      - alert: DatabaseConnectionIssues
-        expr: pg_up == 0
-        for: 30s
-        labels:
-          severity: critical
-        annotations:
-          summary: "Database connection issues"
-          description: "PostgreSQL database is not accessible"
-
-      # Redis Connection Issues
-      - alert: RedisConnectionIssues
-        expr: redis_up == 0
-        for: 30s
-        labels:
-          severity: critical
-        annotations:
-          summary: "Redis connection issues"
-          description: "Redis cache is not accessible"
-
-      # High Memory Usage
-      - alert: HighMemoryUsage
-        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes > 0.85
         for: 5m
         labels:
           severity: warning
         annotations:
-          summary: "High memory usage"
-          description: "Memory usage is above 85%"
+          summary: "High error rate detected"
+          description: "Service {{ $labels.job }} has error rate above 5% for 5 minutes."
 
-      # High CPU Usage
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High response time detected"
+          description: "95th percentile response time for {{ $labels.job }} is above 2 seconds."
+
+  # ======================================
+  # Database Alerts
+  # ======================================
+  - name: database_alerts
+    rules:
+      - alert: PostgreSQLDown
+        expr: pg_up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL is down"
+          description: "PostgreSQL database is down for more than 1 minute."
+
+      - alert: PostgreSQLHighConnections
+        expr: pg_stat_database_numbackends / pg_settings_max_connections > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL high connection usage"
+          description: "PostgreSQL is using more than 80% of available connections."
+
+      - alert: PostgreSQLSlowQueries
+        expr: rate(pg_stat_database_blk_read_time[5m]) / rate(pg_stat_database_blks_read[5m]) > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL slow queries detected"
+          description: "PostgreSQL average query time is above 100ms."
+
+      - alert: RedisDown
+        expr: redis_up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis is down"
+          description: "Redis instance is down for more than 1 minute."
+
+      - alert: RedisHighMemoryUsage
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis high memory usage"
+          description: "Redis memory usage is above 90%."
+
+  # ======================================
+  # System Resource Alerts
+  # ======================================
+  - name: system_resources
+    rules:
       - alert: HighCPUUsage
         expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
         for: 5m
         labels:
           severity: warning
         annotations:
-          summary: "High CPU usage"
-          description: "CPU usage is above 80%"
+          summary: "High CPU usage detected"
+          description: "CPU usage on {{ $labels.instance }} is above 80% for 5 minutes."
 
-      # Disk Space Low
-      - alert: DiskSpaceLow
-        expr: (node_filesystem_avail_bytes{mountpoint="/"} * 100) / node_filesystem_size_bytes{mountpoint="/"} < 10
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes > 0.9
         for: 5m
         labels:
           severity: warning
         annotations:
-          summary: "Low disk space"
-          description: "Disk space is below 10%"
+          summary: "High memory usage detected"
+          description: "Memory usage on {{ $labels.instance }} is above 90%."
 
-      # Service Health Check Failures
-      - alert: HealthCheckFailure
-        expr: health_check_status == 0
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) < 0.1
         for: 1m
         labels:
           severity: critical
         annotations:
-          summary: "Health check failed for {{ $labels.service }}"
-          description: "Service {{ $labels.service }} health check is failing" 
+          summary: "Low disk space"
+          description: "Disk space on {{ $labels.instance }} is below 10%."
+
+      - alert: HighDiskIO
+        expr: rate(node_disk_io_time_seconds_total[5m]) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High disk I/O detected"
+          description: "Disk I/O on {{ $labels.instance }} is high for 5 minutes."
+
+  # ======================================
+  # Application-Specific Alerts
+  # ======================================
+  - name: application_alerts
+    rules:
+      - alert: HighOrderProcessingTime
+        expr: histogram_quantile(0.95, rate(order_processing_duration_seconds_bucket[5m])) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High order processing time"
+          description: "95th percentile order processing time is above 10 seconds."
+
+      - alert: PaymentFailureRateHigh
+        expr: rate(payment_failures_total[5m]) / rate(payment_attempts_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High payment failure rate"
+          description: "Payment failure rate is above 5% for 5 minutes."
+
+      - alert: LowCacheHitRate
+        expr: rate(cache_hits_total[5m]) / (rate(cache_hits_total[5m]) + rate(cache_misses_total[5m])) < 0.8
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low cache hit rate"
+          description: "Cache hit rate is below 80% for 10 minutes."
+
+      - alert: QueueBacklogHigh
+        expr: rabbitmq_queue_messages > 1000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High queue backlog"
+          description: "Queue {{ $labels.queue }} has more than 1000 messages."
+
+  # ======================================
+  # Security Alerts
+  # ======================================
+  - name: security_alerts
+    rules:
+      - alert: HighFailedAuthAttempts
+        expr: rate(auth_failed_attempts_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High failed authentication attempts"
+          description: "More than 10 failed authentication attempts per second for 2 minutes."
+
+      - alert: SuspiciousAPIActivity
+        expr: rate(http_requests_total{status="429"}[5m]) > 5
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High rate limiting activity"
+          description: "High number of rate-limited requests detected."
+
+  # ======================================
+  # Business Metrics Alerts
+  # ======================================
+  - name: business_metrics
+    rules:
+      - alert: LowOrderVolume
+        expr: rate(orders_created_total[1h]) < 1
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low order volume"
+          description: "Order creation rate is below 1 per hour for 30 minutes."
+
+      - alert: RevenueDropAlert
+        expr: sum(rate(order_total_amount[1h])) < 1000
+        for: 1h
+        labels:
+          severity: critical
+        annotations:
+          summary: "Significant revenue drop"
+          description: "Hourly revenue is below $1000 for 1 hour."

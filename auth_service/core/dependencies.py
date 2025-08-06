@@ -5,10 +5,8 @@ from typing import Annotated
 import sys
 import os
 
-# Add path for shared modules
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
-
-from shared.core.database import get_db_session
+# Local database import
+from .database import get_db_session
 from services.user_service import UserService
 from services.token_service import TokenService
 from services.audit_service import AuditService

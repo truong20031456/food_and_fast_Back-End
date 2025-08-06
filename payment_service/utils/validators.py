@@ -1,53 +1,151 @@
 """
-Validation Utilities - Data validation and sanitization functions for payments.
+Validation Utilities - Enhanced data validation and sanitization functions for payments.
 """
 
 import re
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Dict
 from decimal import Decimal
 
 
-def validate_amount(amount: float) -> Tuple[bool, str]:
+def validate_amount(amount: float, currency: str = "USD") -> Tuple[bool, str]:
     """
-    Validate payment amount.
+    Validate payment amount with currency-specific rules.
 
     Args:
         amount: Amount to validate
+        currency: Currency code for validation
 
     Returns:
         Tuple of (is_valid, error_message)
     """
-    if not isinstance(amount, (int, float)):
+    if not isinstance(amount, (int, float, Decimal)):
         return False, "Amount must be a number"
 
     if amount <= 0:
         return False, "Amount must be greater than 0"
 
-    if amount > 999999.99:
-        return False, "Amount exceeds maximum limit"
+    # Currency-specific minimum amounts
+    min_amounts = {
+        "USD": 0.50,
+        "EUR": 0.50,
+        "GBP": 0.30,
+        "VND": 1000,
+        "JPY": 50,
+    }
+
+    min_amount = min_amounts.get(currency.upper(), 0.50)
+    if amount < min_amount:
+        return False, f"Amount must be at least {min_amount} {currency}"
+
+    # Maximum amount check
+    max_amounts = {
+        "USD": 999999.99,
+        "EUR": 999999.99,
+        "GBP": 999999.99,
+        "VND": 999999999,
+        "JPY": 9999999,
+    }
+
+    max_amount = max_amounts.get(currency.upper(), 999999.99)
+    if amount > max_amount:
+        return False, f"Amount exceeds maximum limit of {max_amount} {currency}"
 
     return True, ""
 
 
-def validate_currency(currency: str) -> bool:
+def validate_currency(currency: str) -> Tuple[bool, str]:
     """
-    Validate currency code.
+    Validate currency code against supported currencies.
 
     Args:
         currency: Currency code to validate
 
     Returns:
-        True if valid, False otherwise
+        Tuple of (is_valid, error_message)
     """
     if not currency:
-        return False
+        return False, "Currency code is required"
 
     # Check if it's a valid 3-letter currency code
     pattern = r"^[A-Z]{3}$"
-    return re.match(pattern, currency) is not None
+    if not re.match(pattern, currency.upper()):
+        return False, "Currency code must be 3 uppercase letters"
+
+    # List of supported currencies
+    supported_currencies = {
+        "USD",
+        "EUR",
+        "GBP",
+        "VND",
+        "JPY",
+        "AUD",
+        "CAD",
+        "CHF",
+        "CNY",
+        "SGD",
+    }
+
+    if currency.upper() not in supported_currencies:
+        return False, f"Currency {currency} is not supported"
+
+    return True, ""
 
 
-def validate_payment_method(payment_method: str) -> bool:
+def validate_payment_method(payment_method: str) -> Tuple[bool, str]:
+    """
+    Validate payment method.
+
+    Args:
+        payment_method: Payment method to validate
+
+    Returns:
+        Tuple of (is_valid, error_message)
+    """
+    if not payment_method:
+        return False, "Payment method is required"
+
+    supported_methods = {"stripe", "momo", "vnpay", "paypal", "apple_pay", "google_pay"}
+
+    if payment_method.lower() not in supported_methods:
+        return False, f"Payment method '{payment_method}' is not supported"
+
+    return True, ""
+
+
+def validate_payment_method_currency_combination(
+    payment_method: str, currency: str
+) -> Tuple[bool, str]:
+    """
+    Validate payment method and currency combination.
+
+    Args:
+        payment_method: Payment method
+        currency: Currency code
+
+    Returns:
+        Tuple of (is_valid, error_message)
+    """
+    # Payment method specific currency support
+    method_currency_support = {
+        "stripe": {"USD", "EUR", "GBP", "AUD", "CAD", "CHF", "JPY", "SGD"},
+        "momo": {"VND"},
+        "vnpay": {"VND"},
+        "paypal": {"USD", "EUR", "GBP", "AUD", "CAD", "JPY"},
+        "apple_pay": {"USD", "EUR", "GBP", "AUD", "CAD", "CHF", "JPY", "SGD"},
+        "google_pay": {"USD", "EUR", "GBP", "AUD", "CAD", "CHF", "JPY", "SGD"},
+    }
+
+    supported_currencies = method_currency_support.get(payment_method.lower())
+    if not supported_currencies:
+        return False, f"Unknown payment method: {payment_method}"
+
+    if currency.upper() not in supported_currencies:
+        return (
+            False,
+            f"Payment method '{payment_method}' does not support currency '{currency}'",
+        )
+
+    return True, ""
     """
     Validate payment method.
 

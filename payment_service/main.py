@@ -4,7 +4,11 @@ Handles payment processing for the Food Fast e-commerce platform.
 """
 
 import os
+import sys
 from contextlib import asynccontextmanager
+
+# Add parent directory to Python path for shared_code
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,8 +20,8 @@ from gateways.stripe import StripeGateway
 from gateways.momo import MoMoGateway
 from gateways.vnpay import VNPayGateway
 from promotions.promotion_service import PromotionService
-from shared.database.connection import get_database_manager, test_database_connection
-from shared.messaging.redis_client import get_redis_manager, test_redis_connection
+from shared_code.core.database import get_database_manager, test_database_connection
+from shared_code.utils.redis import get_redis_manager, test_redis_connection
 from utils.logger import get_logger, setup_logging
 
 # Setup logging
@@ -35,12 +39,7 @@ payment_controller = None
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
-    global \
-        stripe_gateway, \
-        momo_gateway, \
-        vnpay_gateway, \
-        promotion_service, \
-        payment_controller
+    global stripe_gateway, momo_gateway, vnpay_gateway, promotion_service, payment_controller
 
     # Startup
     logger.info("Payment Service starting up...")
@@ -91,8 +90,8 @@ async def lifespan(app: FastAPI):
     # Shutdown
     logger.info("Payment Service shutting down...")
     try:
-        from shared.database.connection import close_database_connections
-        from shared.messaging.redis_client import close_redis_connections
+        from shared_code.core.database import close_database_connections
+        from shared_code.utils.redis import close_redis_connections
 
         close_database_connections()
         close_redis_connections()

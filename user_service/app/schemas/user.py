@@ -65,6 +65,13 @@ class UserListResponse(BaseModel):
     users: List[UserRead]
 
 
+class UserLogin(BaseModel):
+    """Schema for user login."""
+
+    username_or_email: str = Field(..., description="Username or email")
+    password: str = Field(..., min_length=8, description="Password")
+
+
 class UserGoogleRequest(BaseModel):
     """Schema for Google OAuth user data."""
 

@@ -7,9 +7,9 @@ parent_dir = os.path.abspath(os.path.join(current_dir, ".."))
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
-from shared.core.app import create_app
-from shared.core.config import get_service_settings
-from shared.utils.logging import get_logger
+from shared_code.core.app import create_app
+from shared_code.core.config import get_service_settings
+from shared_code.utils.logging import get_logger
 
 from app.routers import gateway, auth
 from app.core.startup import startup_task
@@ -18,12 +18,19 @@ logger = get_logger(__name__)
 settings = get_service_settings("api_gateway")
 
 
+from app.core.error_handler import http_exception_handler, generic_exception_handler
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
 # Create the FastAPI app with standardized configuration
 app = create_app(
     service_name="API Gateway",
     settings=settings,
     routers=[gateway.router, auth.router],
     startup_tasks=[startup_task],
+    exception_handlers={
+        StarletteHTTPException: http_exception_handler,
+        Exception: generic_exception_handler,
+    },
 )
 
 if __name__ == "__main__":

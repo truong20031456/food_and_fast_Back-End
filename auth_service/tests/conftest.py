@@ -10,7 +10,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from main import app
-from shared.core.database import get_db, Base
+from shared_code.core.database import get_db, Base
 
 
 # Test database setup

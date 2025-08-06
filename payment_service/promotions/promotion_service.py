@@ -137,9 +137,11 @@ class PromotionService:
                     available_promotions.append(
                         {
                             "code": code,
-                            "description": f"Save {promotion['discount_percentage']}%"
-                            if promotion["discount_percentage"]
-                            else f"Save ${promotion['discount_amount']}",
+                            "description": (
+                                f"Save {promotion['discount_percentage']}%"
+                                if promotion["discount_percentage"]
+                                else f"Save ${promotion['discount_amount']}"
+                            ),
                             "min_amount": promotion["min_amount"],
                             "valid_until": promotion["valid_until"].isoformat(),
                         }

@@ -9,9 +9,9 @@ import sys
 import os
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-from shared.core.app import create_app
-from shared.core.config import get_service_settings
-from shared.core.database import get_database_manager
+from core.app import create_app
+from core.config import get_service_settings
+from core.database import get_database_manager
 from models.base import Base
 from controllers import (
     auth_router,
@@ -44,6 +44,8 @@ app = create_app(
     routers=[auth_router, user_router, token_router, password_router, profile_router],
     startup_tasks=[startup_task],
 )
+
+app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 
 if __name__ == "__main__":
     import uvicorn

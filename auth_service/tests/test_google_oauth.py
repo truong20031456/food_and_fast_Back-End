@@ -183,7 +183,8 @@ class TestGoogleOAuth:
                 1, mock_google_user_info.sub
             )
 
-    def test_get_google_auth_url(self):
+    @pytest.mark.asyncio
+    async def test_get_google_auth_url(self):
         """Test Google OAuth URL generation"""
         service = GoogleOAuthService(
             db=AsyncMock(),
@@ -193,7 +194,7 @@ class TestGoogleOAuth:
             cache_service=AsyncMock(),
         )
 
-        auth_url = service.get_google_auth_url("test_state")
+        auth_url = await service.get_google_auth_url("test_state")
 
         assert "accounts.google.com" in auth_url
         assert "client_id" in auth_url

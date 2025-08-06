@@ -89,11 +89,11 @@ Create a `.env` file in the auth_service directory:
 
 ```env
 # Database Configuration
-DATABASE_URL=postgresql+asyncpg://truong:truong123@localhost:5432/auth_service_db
+DATABASE_URL=postgresql+asyncpg://username:password@localhost:5432/auth_service_db
 DATABASE_ECHO=false
 
 # Security
-SECRET_KEY=D_Rzt0rRhDYXUz2k-7jsAcFcPQINXxR0Q0_hLj7iN_4
+SECRET_KEY=your-secret-key-here
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 REFRESH_TOKEN_EXPIRE_DAYS=7

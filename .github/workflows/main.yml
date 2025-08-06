@@ -25,34 +25,34 @@ jobs:
       analytics-service: ${{ steps.changes.outputs.analytics-service }}
     steps:
       - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v2
+      - uses: dorny/paths-filter@v3
         id: changes
         with:
           filters: |
             api-gateway:
               - 'api_gateway/**'
-              - 'shared/**'
+              - 'shared_code/**'
             auth-service:
               - 'auth_service/**'
-              - 'shared/**'
+              - 'shared_code/**'
             user-service:
               - 'user_service/**'
-              - 'shared/**'
+              - 'shared_code/**'
             product-service:
               - 'product_service/**'
-              - 'shared/**'
+              - 'shared_code/**'
             order-service:
               - 'order_service/**'
-              - 'shared/**'
+              - 'shared_code/**'
             payment-service:
               - 'payment_service/**'
-              - 'shared/**'
+              - 'shared_code/**'
             notification-service:
               - 'notification_service/**'
-              - 'shared/**'
+              - 'shared_code/**'
             analytics-service:
               - 'analytics_service/**'
-              - 'shared/**'
+              - 'shared_code/**'
 
   # Test và Build cho API Gateway
   api-gateway:
@@ -72,17 +72,18 @@ jobs:
         run: |
           cd api_gateway
           pip install -r requirements.txt
-          pip install pytest pytest-cov flake8 black
           
-      - name: Code formatting check
+      - name: Code quality checks
         run: |
           cd api_gateway
-          black --check .
+          ruff format --check .
+          ruff check .
           
-      - name: Lint with flake8
+      - name: Security checks
         run: |
           cd api_gateway
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          bandit -r . -f json -o bandit-report.json || true
+          safety check || true
           
       - name: Run tests
         run: |
@@ -137,17 +138,18 @@ jobs:
         run: |
           cd auth_service
           pip install -r requirements.txt
-          pip install pytest pytest-cov flake8 black
           
-      - name: Code formatting check
+      - name: Code quality checks
         run: |
           cd auth_service
-          black --check .
+          ruff format --check .
+          ruff check .
           
-      - name: Lint with flake8
+      - name: Security checks
         run: |
           cd auth_service
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          bandit -r . -f json -o bandit-report.json || true
+          safety check || true
           
       - name: Run tests
         env:
@@ -204,17 +206,18 @@ jobs:
         run: |
           cd user_service
           pip install -r requirements.txt
-          pip install pytest pytest-cov flake8 black
           
-      - name: Code formatting check
+      - name: Code quality checks
         run: |
           cd user_service
-          black --check .
+          ruff format --check .
+          ruff check .
           
-      - name: Lint with flake8
+      - name: Security checks
         run: |
           cd user_service
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          bandit -r . -f json -o bandit-report.json || true
+          safety check || true
           
       - name: Run tests
         env:
@@ -278,17 +281,18 @@ jobs:
         run: |
           cd product_service
           pip install -r requirements.txt
-          pip install pytest pytest-cov flake8 black
           
-      - name: Code formatting check
+      - name: Code quality checks
         run: |
           cd product_service
-          black --check .
+          ruff format --check .
+          ruff check .
           
-      - name: Lint with flake8
+      - name: Security checks
         run: |
           cd product_service
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          bandit -r . -f json -o bandit-report.json || true
+          safety check || true
           
       - name: Run tests
         env:
@@ -350,17 +354,18 @@ jobs:
         run: |
           cd order_service
           pip install -r requirements.txt
-          pip install pytest pytest-cov flake8 black
           
-      - name: Code formatting check
+      - name: Code quality checks
         run: |
           cd order_service
-          black --check .
+          ruff format --check .
+          ruff check .
           
-      - name: Lint with flake8
+      - name: Security checks
         run: |
           cd order_service
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          bandit -r . -f json -o bandit-report.json || true
+          safety check || true
           
       - name: Run tests
         env:
@@ -418,17 +423,18 @@ jobs:
         run: |
           cd payment_service
           pip install -r requirements.txt
-          pip install pytest pytest-cov flake8 black
           
-      - name: Code formatting check
+      - name: Code quality checks
         run: |
           cd payment_service
-          black --check .
+          ruff format --check .
+          ruff check .
           
-      - name: Lint with flake8
+      - name: Security checks
         run: |
           cd payment_service
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          bandit -r . -f json -o bandit-report.json || true
+          safety check || true
           
       - name: Run tests
         env:
@@ -477,17 +483,18 @@ jobs:
         run: |
           cd notification_service
           pip install -r requirements.txt
-          pip install pytest pytest-cov flake8 black
           
-      - name: Code formatting check
+      - name: Code quality checks
         run: |
           cd notification_service
-          black --check .
+          ruff format --check .
+          ruff check .
           
-      - name: Lint with flake8
+      - name: Security checks
         run: |
           cd notification_service
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          bandit -r . -f json -o bandit-report.json || true
+          safety check || true
           
       - name: Run tests
         env:
@@ -544,17 +551,18 @@ jobs:
         run: |
           cd analytics_service
           pip install -r requirements.txt
-          pip install pytest pytest-cov flake8 black
           
-      - name: Code formatting check
+      - name: Code quality checks
         run: |
           cd analytics_service
-          black --check .
+          ruff format --check .
+          ruff check .
           
-      - name: Lint with flake8
+      - name: Security checks
         run: |
           cd analytics_service
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          bandit -r . -f json -o bandit-report.json || true
+          safety check || true
           
       - name: Run tests
         env:
@@ -622,17 +630,19 @@ jobs:
       
       - name: Deploy to Production
         run: |
-          echo "Deploying to production environment..."
-          # Add your deployment scripts here
-          # Example: kubectl apply -f k8s/production/
-          # Example: helm upgrade --install food-fast ./helm-chart
+          echo "🚀 Deploying to production environment..."
+          chmod +x ./scripts/deploy.sh
+          ./scripts/deploy.sh production
           
       - name: Run Health Checks
         run: |
-          echo "Running production health checks..."
-          # Add health check scripts here
+          echo "🔍 Running production health checks..."
+          chmod +x ./scripts/health-check.sh
+          ./scripts/health-check.sh production
           
       - name: Notify Deployment
         run: |
-          echo "Production deployment completed successfully!"
+          echo "✅ Production deployment completed successfully!"
+          echo "📦 Services deployed: $(echo '${{ needs.detect-changes.outputs }}' | jq -r 'to_entries[] | select(.value == "true") | .key' | tr '\n' ' ')"
+          echo "🔗 Commit: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}"
           # Add notification logic here (Slack, email, etc.)

@@ -1,37 +1,28 @@
 FROM python:3.11-slim
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/app
-
 WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
-    gcc \
-    libpq-dev \
+    postgresql-client \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better layer caching
+# Install Python dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install development dependencies
+RUN pip install --no-cache-dir watchdog[watchmedo] alembic
 
 # Copy application code
 COPY . .
 
-# Create non-root user for security
-RUN adduser --disabled-password --gecos '' appuser && \
-    chown -R appuser:appuser /app
-USER appuser
+# Create shared directory
+RUN mkdir -p /app/shared
 
 # Expose port
 EXPOSE 8003
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD python -c "import httpx; httpx.get('http://localhost:8003/health')" || exit 1
-
-# Run the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8003"]
+# Command for development with hot reload
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8003", "--reload", "--reload-dir", "/app"] 

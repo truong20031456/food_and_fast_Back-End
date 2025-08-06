@@ -18,7 +18,7 @@ from services.google_oauth_service import GoogleOAuthService
 from services.user_service import UserService
 from services.token_service import TokenService
 from services.audit_service import AuditService
-from services.cache_service import CacheService
+from shared_code.services.cache_service import CacheService, get_cache_service
 from core.dependencies import (
     get_user_service,
     get_token_service,
