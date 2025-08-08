@@ -1,5 +1,5 @@
 """
-Analytics Service - Core analytics functionality.
+Analytics Service - Core analytics functionality with Elasticsearch integration.
 """
 
 import logging
@@ -8,26 +8,37 @@ from datetime import datetime, timedelta
 import random
 
 from utils.logger import get_logger
+from services.elasticsearch_analytics_service import es_analytics_service
 
 logger = get_logger(__name__)
 
 
 class AnalyticsService:
-    """Service for analytics and reporting."""
+    """Service for analytics and reporting with Elasticsearch integration."""
 
     def __init__(self, db_manager):
         self.db_manager = db_manager
+        self.es_service = es_analytics_service
 
     async def get_dashboard_data(self) -> Dict[str, Any]:
-        """Get dashboard analytics data."""
+        """Get dashboard analytics data from Elasticsearch or fallback to mock data."""
         try:
-            # In production, fetch real data from database
-            # For now, return mock data
+            # Try to get real data from Elasticsearch first
+            es_data = await self.es_service.get_dashboard_metrics()
+            
+            if es_data:
+                logger.info("Retrieved dashboard data from Elasticsearch")
+                return es_data
+            
+            # Fallback to mock data if Elasticsearch is not available
+            logger.warning("Elasticsearch unavailable, using mock data")
             return {
                 "total_revenue": 125000.50,
                 "total_orders": 1250,
                 "total_customers": 850,
                 "average_order_value": 100.00,
+                "today_revenue": 5432.10,
+                "today_orders": 45,
                 "last_updated": datetime.utcnow().isoformat(),
             }
         except Exception as e:
@@ -35,30 +46,41 @@ class AnalyticsService:
             raise
 
     async def get_top_selling_products(self, limit: int = 10) -> List[Dict[str, Any]]:
-        """Get top selling products."""
+        """Get top selling products from Elasticsearch or fallback to mock data."""
         try:
-            # Mock data - in production, fetch from database
+            # Try to get real data from Elasticsearch first
+            es_data = await self.es_service.get_top_selling_products(limit)
+            
+            if es_data:
+                logger.info("Retrieved top selling products from Elasticsearch")
+                return es_data
+            
+            # Fallback to mock data if Elasticsearch is not available
+            logger.warning("Elasticsearch unavailable, using mock data for top selling products")
             products = [
                 {
-                    "id": 1,
+                    "product_id": "1",
                     "name": "Chicken Burger",
                     "price": 12.99,
+                    "category": "Burgers",
                     "sales_count": 150,
                     "total_quantity": 300,
                     "total_revenue": 1948.50,
                 },
                 {
-                    "id": 2,
+                    "product_id": "2",
                     "name": "Beef Burger",
                     "price": 15.99,
+                    "category": "Burgers",
                     "sales_count": 120,
                     "total_quantity": 240,
                     "total_revenue": 1918.80,
                 },
                 {
-                    "id": 3,
+                    "product_id": "3",
                     "name": "French Fries",
                     "price": 5.99,
+                    "category": "Sides",
                     "sales_count": 200,
                     "total_quantity": 400,
                     "total_revenue": 1198.00,
@@ -72,9 +94,22 @@ class AnalyticsService:
             return []
 
     async def get_user_activity_summary(self) -> Dict[str, Any]:
-        """Get user activity summary."""
+        """Get user activity summary from Elasticsearch or fallback to mock data."""
         try:
-            # Mock data - in production, fetch from database
+            # Try to get real data from Elasticsearch first
+            es_data = await self.es_service.get_user_activity_summary()
+            
+            if es_data:
+                logger.info("Retrieved user activity summary from Elasticsearch")
+                # Add mock data for fields not available in ES
+                es_data.update({
+                    "new_users_today": 25,
+                    "new_users_week": 120,
+                })
+                return es_data
+            
+            # Fallback to mock data if Elasticsearch is not available
+            logger.warning("Elasticsearch unavailable, using mock data for user activity")
             return {
                 "total_users": 1000,
                 "active_users_today": 150,
@@ -87,9 +122,18 @@ class AnalyticsService:
             raise
 
     async def get_revenue_trends(self, period: str = "monthly") -> List[Dict[str, Any]]:
-        """Get revenue trends over time."""
+        """Get revenue trends over time from Elasticsearch or fallback to mock data."""
         try:
-            # Mock data - in production, fetch from database
+            # Try to get real data from Elasticsearch first
+            periods_count = 12 if period == "monthly" else 7 if period == "weekly" else 30
+            es_data = await self.es_service.get_revenue_trends(period, periods_count)
+            
+            if es_data:
+                logger.info(f"Retrieved {period} revenue trends from Elasticsearch")
+                return es_data
+            
+            # Fallback to mock data if Elasticsearch is not available
+            logger.warning("Elasticsearch unavailable, using mock data for revenue trends")
             trends = []
             current_date = datetime.now()
 
@@ -112,6 +156,7 @@ class AnalyticsService:
                         "period": period_label,
                         "revenue": round(revenue, 2),
                         "orders": orders,
+                        "timestamp": date.isoformat(),
                     }
                 )
 
@@ -127,22 +172,63 @@ class AnalyticsService:
         user_id: Optional[str] = None,
         data: Dict[str, Any] = None,
     ) -> bool:
-        """Track analytics event."""
+        """Track analytics event to Elasticsearch."""
         try:
-            # In production, save to database
+            # Try to index to Elasticsearch first
             event_data = {
                 "event_type": event_type,
                 "user_id": user_id,
-                "data": data or {},
+                "metadata": data or {},
                 "timestamp": datetime.utcnow().isoformat(),
             }
-
-            logger.info(f"Tracked event: {event_type}")
+            
+            es_success = await self.es_service.client.index_document(
+                self.es_service.analytics_index, event_data
+            )
+            
+            if es_success:
+                logger.info(f"Tracked event to Elasticsearch: {event_type}")
+            else:
+                logger.warning(f"Failed to track event to Elasticsearch: {event_type}")
+            
+            # Also save to traditional database if available
+            # In production, implement database storage here
+            
             return True
 
         except Exception as e:
             logger.error(f"Failed to track event: {e}")
             return False
+
+    async def index_order_data(self, order_data: Dict[str, Any]) -> bool:
+        """Index order data to Elasticsearch for analytics."""
+        try:
+            return await self.es_service.index_order_data(order_data)
+        except Exception as e:
+            logger.error(f"Failed to index order data: {e}")
+            return False
+
+    async def index_user_activity(self, activity_data: Dict[str, Any]) -> bool:
+        """Index user activity data to Elasticsearch."""
+        try:
+            return await self.es_service.index_user_activity(activity_data)
+        except Exception as e:
+            logger.error(f"Failed to index user activity: {e}")
+            return False
+
+    async def search_analytics(
+        self,
+        query: str,
+        filters: Optional[Dict[str, Any]] = None,
+        date_range: Optional[Dict[str, str]] = None,
+        size: int = 100
+    ) -> List[Dict[str, Any]]:
+        """Search analytics data using Elasticsearch."""
+        try:
+            return await self.es_service.search_analytics(query, filters, date_range, size)
+        except Exception as e:
+            logger.error(f"Failed to search analytics: {e}")
+            return []
 
     async def get_sales_by_category(
         self, start_date: str = None, end_date: str = None

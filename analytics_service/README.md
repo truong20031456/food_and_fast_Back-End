@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Analytics Service is a microservice responsible for collecting, processing, and analyzing data from across the Food & Fast E-Commerce platform. It provides comprehensive business intelligence, reporting, and data analytics capabilities to help drive business decisions and optimize operations.
+The Analytics Service is a microservice responsible for collecting, processing, and analyzing data from across the Food & Fast E-Commerce platform. It provides comprehensive business intelligence, reporting, and data analytics capabilities powered by **Elasticsearch** for high-performance search and analytics.
 
 ## Features
 
@@ -14,13 +14,17 @@ The Analytics Service is a microservice responsible for collecting, processing, 
 - 💳 **Payment Analytics**: Payment processing and financial insights
 - 🔄 **Real-time Dashboards**: Live data visualization and monitoring
 - 📊 **Custom Reports**: Configurable reporting and data export
+- 🔍 **Elasticsearch Integration**: High-performance search and analytics
+- ⚡ **Real-time Data Processing**: Stream processing for live analytics
+- 📊 **Kibana Dashboards**: Advanced data visualization
 
 ## Tech Stack
 
 - **Framework**: FastAPI
 - **Database**: PostgreSQL (async)
+- **Search & Analytics**: Elasticsearch 8.11+
+- **Visualization**: Kibana, Plotly, Matplotlib
 - **Data Processing**: Pandas, NumPy
-- **Visualization**: Plotly, Matplotlib
 - **Caching**: Redis
 - **Queue**: Redis/RabbitMQ for data processing
 - **Validation**: Pydantic
@@ -30,22 +34,43 @@ The Analytics Service is a microservice responsible for collecting, processing, 
 
 ```
 analytics_service/
-├── reports/             # Report generation modules
-│   └── sales_report.py # Sales analytics reports
-├── services/            # Analytics services
-│   └── analytics_service.py
-├── main.py             # FastAPI application entry point
-├── requirements.txt    # Python dependencies
-└── Dockerfile         # Docker configuration
+├── core/                    # Core modules
+│   ├── config.py           # Configuration management
+│   ├── database.py         # Database connection
+│   └── elasticsearch_client.py # Elasticsearch client
+├── services/               # Analytics services
+│   ├── analytics_service.py           # Main analytics service
+│   ├── elasticsearch_analytics_service.py # Elasticsearch analytics
+│   ├── sales_report.py     # Sales reports
+│   └── dashboard_service.py # Dashboard service
+├── controllers/            # API controllers
+│   └── analytics_controller.py # Analytics endpoints
+├── schemas/               # Pydantic schemas
+│   └── analytics.py       # Analytics schemas
+├── scripts/               # Utility scripts
+│   ├── generate_sample_data.py      # Sample data generator
+│   ├── start_with_elasticsearch.sh  # Bash startup script
+│   └── start_with_elasticsearch.ps1 # PowerShell startup script
+├── main.py                # FastAPI application entry point
+├── requirements.txt       # Python dependencies
+├── docker-compose.yml     # Docker services configuration
+└── Dockerfile            # Docker configuration
 ```
 
 ## API Endpoints
 
-### Business Intelligence
-- `GET /analytics/overview` - Business overview dashboard
-- `GET /analytics/kpis` - Key performance indicators
-- `GET /analytics/trends` - Business trends analysis
-- `GET /analytics/forecasts` - Business forecasting
+### Core Analytics
+- `GET /api/v1/analytics/dashboard` - Main dashboard data
+- `GET /api/v1/analytics/products/top-selling` - Top selling products
+- `GET /api/v1/analytics/users/activity` - User activity summary
+- `GET /api/v1/analytics/revenue/trends` - Revenue trends analysis
+
+### Elasticsearch Integration
+- `POST /api/v1/analytics/events/track` - Track analytics events
+- `POST /api/v1/analytics/orders/index` - Index order data
+- `POST /api/v1/analytics/user-activity/index` - Index user activity
+- `GET /api/v1/analytics/search` - Search analytics data
+- `GET /api/v1/analytics/health/elasticsearch` - Elasticsearch health
 
 ### Sales Analytics
 - `GET /analytics/sales/revenue` - Revenue analytics
@@ -85,44 +110,147 @@ analytics_service/
 - `GET /export/products` - Export product data
 - `GET /export/orders` - Export order data
 
+## Quick Start with Elasticsearch
+
+### Option 1: Using Google Cloud Elasticsearch (Recommended for Production)
+
+1. **Configure cloud settings:**
+   ```bash
+   # Copy cloud configuration
+   cp .env.cloud .env
+   
+   # Update .env with your cloud credentials:
+   # ELASTICSEARCH_HOST=your-cloud-host
+   # ELASTICSEARCH_API_KEY=your-api-key
+   ```
+
+2. **Start with cloud Elasticsearch:**
+   ```bash
+   # On Windows (PowerShell)
+   .\scripts\start_with_cloud_elasticsearch.ps1
+
+   # Manual setup:
+   # Start only local services (Redis, PostgreSQL)
+   docker-compose up redis postgres -d
+   
+   # Test cloud connection
+   python scripts/test_elasticsearch_cloud.py
+   
+   # Install dependencies and start
+   pip install -r requirements.txt
+   python main.py
+   ```
+
+### Option 2: Using Local Docker Elasticsearch (Development)
+
+1. **Start with local Elasticsearch:**
+   ```bash
+   # On Linux/Mac
+   ./scripts/start_with_elasticsearch.sh
+
+   # On Windows (PowerShell)
+   .\scripts\start_with_elasticsearch.ps1
+   ```
+
+2. **Manual setup:**
+   ```bash
+   # Copy local configuration
+   cp .env.example .env
+
+   # Start all local services including Elasticsearch
+   docker-compose --profile local-es up -d
+
+   # Install Python dependencies
+   pip install -r requirements.txt
+
+   # Generate sample data (optional)
+   python scripts/generate_sample_data.py
+
+   # Start the service
+   python main.py
+   ```
+
 ## Environment Variables
 
 Create a `.env` file in the analytics_service directory:
 
 ```env
-# Database
-DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/analytics_db
+# Application Settings
+APP_NAME=Analytics Service
+DEBUG=false
+LOG_LEVEL=INFO
+PORT=8001
 
-# Application
-HOST=0.0.0.0
-PORT=8007
-DEBUG=true
+# Database Configuration
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=postgres
+DB_PASSWORD=password
+DB_NAME=analytics_db
 
-# Service URLs
-AUTH_SERVICE_URL=http://localhost:8001
-PRODUCT_SERVICE_URL=http://localhost:8002
+# Redis Configuration
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+REDIS_DB=0
+
+# Elasticsearch Configuration
+ELASTICSEARCH_HOST=localhost
+ELASTICSEARCH_PORT=9200
+ELASTICSEARCH_USERNAME=
+ELASTICSEARCH_PASSWORD=
+ELASTICSEARCH_SCHEME=http
+ELASTICSEARCH_VERIFY_CERTS=false
+
+# Elasticsearch Index Names
+ELASTICSEARCH_ANALYTICS_INDEX=analytics
+ELASTICSEARCH_ORDER_INDEX=orders
+ELASTICSEARCH_USER_ACTIVITY_INDEX=user_activity
+ELASTICSEARCH_PRODUCT_INDEX=products
+
+# External Services
 ORDER_SERVICE_URL=http://localhost:8003
-PAYMENT_SERVICE_URL=http://localhost:8004
-USER_SERVICE_URL=http://localhost:8005
-NOTIFICATION_SERVICE_URL=http://localhost:8006
+PRODUCT_SERVICE_URL=http://localhost:8002
+USER_SERVICE_URL=http://localhost:8006
 
-# Redis
-REDIS_URL=redis://localhost:6379
+# Analytics Settings
+ANALYTICS_DATA_RETENTION_DAYS=365
+ANALYTICS_REAL_TIME_TRACKING=true
+ANALYTICS_BATCH_PROCESSING=true
+```
 
-# Analytics Configuration
-DATA_RETENTION_DAYS=365
-BATCH_PROCESSING_SIZE=1000
-REPORT_CACHE_TTL=3600
-REAL_TIME_UPDATE_INTERVAL=300
+## Elasticsearch Integration
 
-# Export Configuration
-EXPORT_FORMATS=csv,excel,json
-MAX_EXPORT_RECORDS=100000
-EXPORT_TIMEOUT_SECONDS=300
+### Data Flow
+1. **Order Events**: Automatically indexed when orders are processed
+2. **User Activity**: Tracked and indexed in real-time
+3. **Product Analytics**: Updated based on sales and interactions
+4. **Custom Events**: Track any business event via API
 
-# Visualization Configuration
-CHART_TYPES=line,bar,pie,scatter
-DEFAULT_CHART_THEME=light
+### Sample Data Generation
+Generate sample data for testing:
+```bash
+python scripts/generate_sample_data.py
+```
+
+This creates:
+- 1,000 sample orders
+- 5,000 user activity records
+- Product analytics data
+- Analytics events
+
+### Kibana Dashboards
+Access Kibana at `http://localhost:5601` to create visualizations:
+- Revenue trends
+- User behavior patterns
+- Product performance
+- Order analytics
+
+### Search Capabilities
+Use the search API to query analytics data:
+```bash
+curl -X GET "localhost:8001/api/v1/analytics/search?query=order_placed&size=10"
+```
 MAX_DATA_POINTS=1000
 
 # Logging

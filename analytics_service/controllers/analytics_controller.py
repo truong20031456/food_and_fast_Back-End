@@ -4,7 +4,7 @@ Analytics Controller - Handles HTTP requests for analytics endpoints.
 
 import logging
 from typing import Dict, List, Any, Optional
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Body
 from fastapi.responses import JSONResponse
 
 from services.analytics_service import AnalyticsService
@@ -123,4 +123,140 @@ class AnalyticsController:
             logger.error(f"Failed to get daily sales report: {e}")
             raise HTTPException(
                 status_code=500, detail="Failed to retrieve daily sales report"
+            )
+
+    @router.post("/events/track")
+    async def track_event(
+        self,
+        event_data: Dict[str, Any] = Body(..., description="Event data to track")
+    ):
+        """Track analytics event to Elasticsearch."""
+        try:
+            event_type = event_data.get("event_type")
+            user_id = event_data.get("user_id")
+            metadata = event_data.get("data", {})
+
+            if not event_type:
+                raise HTTPException(status_code=400, detail="event_type is required")
+
+            success = await self.analytics_service.track_event(event_type, user_id, metadata)
+            
+            if success:
+                return {"status": "success", "message": "Event tracked successfully"}
+            else:
+                raise HTTPException(status_code=500, detail="Failed to track event")
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Failed to track event: {e}")
+            raise HTTPException(status_code=500, detail="Failed to track event")
+
+    @router.post("/orders/index")
+    async def index_order_data(
+        self,
+        order_data: Dict[str, Any] = Body(..., description="Order data to index")
+    ):
+        """Index order data to Elasticsearch for analytics."""
+        try:
+            success = await self.analytics_service.index_order_data(order_data)
+            
+            if success:
+                return {"status": "success", "message": "Order data indexed successfully"}
+            else:
+                raise HTTPException(status_code=500, detail="Failed to index order data")
+
+        except Exception as e:
+            logger.error(f"Failed to index order data: {e}")
+            raise HTTPException(status_code=500, detail="Failed to index order data")
+
+    @router.post("/user-activity/index")
+    async def index_user_activity(
+        self,
+        activity_data: Dict[str, Any] = Body(..., description="User activity data to index")
+    ):
+        """Index user activity data to Elasticsearch."""
+        try:
+            success = await self.analytics_service.index_user_activity(activity_data)
+            
+            if success:
+                return {"status": "success", "message": "User activity indexed successfully"}
+            else:
+                raise HTTPException(status_code=500, detail="Failed to index user activity")
+
+        except Exception as e:
+            logger.error(f"Failed to index user activity: {e}")
+            raise HTTPException(status_code=500, detail="Failed to index user activity")
+
+    @router.get("/search")
+    async def search_analytics(
+        self,
+        query: str = Query(..., description="Search query"),
+        filters: Optional[str] = Query(None, description="JSON string of filters"),
+        date_start: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
+        date_end: Optional[str] = Query(None, description="End date (YYYY-MM-DD)"),
+        size: int = Query(100, description="Number of results to return", ge=1, le=1000)
+    ):
+        """Search analytics data using Elasticsearch."""
+        try:
+            # Parse filters if provided
+            parsed_filters = None
+            if filters:
+                import json
+                try:
+                    parsed_filters = json.loads(filters)
+                except json.JSONDecodeError:
+                    raise HTTPException(status_code=400, detail="Invalid filters JSON")
+
+            # Build date range if provided
+            date_range = None
+            if date_start or date_end:
+                date_range = {}
+                if date_start:
+                    date_range["start"] = date_start
+                if date_end:
+                    date_range["end"] = date_end
+
+            results = await self.analytics_service.search_analytics(
+                query, parsed_filters, date_range, size
+            )
+            
+            return {
+                "status": "success",
+                "results": results,
+                "total": len(results)
+            }
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Failed to search analytics: {e}")
+            raise HTTPException(status_code=500, detail="Failed to search analytics")
+
+    @router.get("/health/elasticsearch")
+    async def elasticsearch_health(self):
+        """Check Elasticsearch health status."""
+        try:
+            from services.elasticsearch_analytics_service import es_analytics_service
+            
+            # Check if Elasticsearch client is connected
+            is_connected = es_analytics_service.client.is_connected
+            health_status = await es_analytics_service.client.health_check()
+            
+            return {
+                "status": "healthy" if health_status else "unhealthy",
+                "connected": is_connected,
+                "elasticsearch": "available" if health_status else "unavailable"
+            }
+
+        except Exception as e:
+            logger.error(f"Elasticsearch health check failed: {e}")
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "status": "unhealthy",
+                    "connected": False,
+                    "elasticsearch": "unavailable",
+                    "error": str(e)
+                }
             )

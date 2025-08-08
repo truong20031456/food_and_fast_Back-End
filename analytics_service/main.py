@@ -21,12 +21,14 @@ from controllers.analytics_controller import (
 )
 from services.analytics_service import AnalyticsService
 from services.sales_report import SalesReportService
+from services.elasticsearch_analytics_service import es_analytics_service
 from core.config import settings
 from core.database import db_manager, init_db, close_db
-from shared.utils.logging import get_logger, setup_logging
+from core.elasticsearch_client import es_client
+from utils.logger import get_logger
 
 # Setup logging
-setup_logging(level=settings.log_level)
+# setup_logging(level=settings.log_level)
 logger = get_logger(__name__)
 
 # Initialize services
@@ -54,6 +56,15 @@ async def lifespan(app: FastAPI):
             logger.error("Failed to connect to database")
             raise Exception("Database connection failed")
 
+        # Initialize Elasticsearch
+        try:
+            await es_client.connect()
+            await es_analytics_service.initialize_indices()
+            logger.info("Elasticsearch initialized successfully")
+        except Exception as e:
+            logger.warning(f"Elasticsearch initialization failed: {e}")
+            logger.warning("Analytics service will continue with database-only mode")
+
         # Initialize services
         analytics_service = AnalyticsService(db_manager)
         sales_report_service = SalesReportService(db_manager)
@@ -74,6 +85,12 @@ async def lifespan(app: FastAPI):
     # Shutdown
     logger.info("Analytics Service shutting down...")
     try:
+        # Close Elasticsearch connection
+        if es_client.is_connected:
+            await es_client.disconnect()
+            logger.info("Elasticsearch disconnected")
+        
+        # Close database connection
         await close_db()
         logger.info("Analytics Service shutdown complete")
     except Exception as e:
@@ -116,6 +133,7 @@ async def health_check():
     """Health check endpoint."""
     try:
         db_healthy = await db_manager.health_check()
+        es_healthy = await es_client.health_check() if es_client.is_connected else False
 
         status = "healthy" if db_healthy else "unhealthy"
 
@@ -123,6 +141,7 @@ async def health_check():
             "status": status,
             "service": "analytics-service",
             "database": "connected" if db_healthy else "disconnected",
+            "elasticsearch": "connected" if es_healthy else "disconnected",
         }
     except Exception as e:
         logger.error(f"Health check failed: {e}")

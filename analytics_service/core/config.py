@@ -3,9 +3,13 @@ Configuration Management - Analytics Service.
 """
 
 import os
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from pydantic import Field
 from pydantic_settings import BaseSettings
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 
 class DatabaseSettings(BaseSettings):
@@ -16,6 +20,8 @@ class DatabaseSettings(BaseSettings):
     username: str = Field(default="postgres", env="DB_USERNAME")
     password: str = Field(default="password", env="DB_PASSWORD")
     database: str = Field(default="analytics_db", env="DB_NAME")
+
+    model_config = {"env_file": ".env", "extra": "ignore"}
 
     @property
     def connection_string(self) -> str:
@@ -31,12 +37,78 @@ class RedisSettings(BaseSettings):
     password: Optional[str] = Field(default=None, env="REDIS_PASSWORD")
     database: int = Field(default=0, env="REDIS_DB")
 
+    model_config = {"env_file": ".env", "extra": "ignore"}
+
     @property
     def connection_string(self) -> str:
         """Get Redis connection string."""
         if self.password:
             return f"redis://:{self.password}@{self.host}:{self.port}/{self.database}"
         return f"redis://{self.host}:{self.port}/{self.database}"
+
+
+class ElasticsearchSettings(BaseSettings):
+    """Elasticsearch configuration settings."""
+
+    host: str = Field(default="localhost", alias="ELASTICSEARCH_HOST")
+    port: int = Field(default=9200, alias="ELASTICSEARCH_PORT")
+    username: Optional[str] = Field(default=None, alias="ELASTICSEARCH_USERNAME")
+    password: Optional[str] = Field(default=None, alias="ELASTICSEARCH_PASSWORD")
+    api_key: Optional[str] = Field(default=None, alias="ELASTICSEARCH_API_KEY")
+    scheme: str = Field(default="http", alias="ELASTICSEARCH_SCHEME")
+    verify_certs: bool = Field(default=False, alias="ELASTICSEARCH_VERIFY_CERTS")
+    ca_certs: Optional[str] = Field(default=None, alias="ELASTICSEARCH_CA_CERTS")
+    
+    # Index settings
+    analytics_index: str = Field(default="analytics", alias="ELASTICSEARCH_ANALYTICS_INDEX")
+    order_index: str = Field(default="orders", alias="ELASTICSEARCH_ORDER_INDEX")
+    user_activity_index: str = Field(default="user_activity", alias="ELASTICSEARCH_USER_ACTIVITY_INDEX")
+    product_index: str = Field(default="products", alias="ELASTICSEARCH_PRODUCT_INDEX")
+
+    model_config = {
+        "env_file": ".env", 
+        "extra": "ignore",
+        "populate_by_name": True
+    }
+
+    @property
+    def hosts(self) -> List[Dict[str, Any]]:
+        """Get Elasticsearch hosts configuration."""
+        host_config = {
+            'host': self.host,
+            'port': self.port,
+            'scheme': self.scheme,
+        }
+        
+        # Priority: API Key > Username/Password
+        if self.api_key:
+            # API Key authentication will be handled in the client
+            pass
+        elif self.username and self.password:
+            host_config['http_auth'] = (self.username, self.password)
+            
+        return [host_config]
+
+    @property
+    def client_config(self) -> Dict[str, Any]:
+        """Get additional client configuration."""
+        config = {
+            'hosts': self.hosts,
+            'verify_certs': self.verify_certs,
+            'request_timeout': 30,
+            'retry_on_timeout': True,
+            'max_retries': 3,
+        }
+        
+        # Add API Key if provided
+        if self.api_key:
+            config['api_key'] = self.api_key
+        
+        # Add CA certificates if provided
+        if self.ca_certs:
+            config['ca_certs'] = self.ca_certs
+            
+        return config
 
 
 class AnalyticsSettings(BaseSettings):
@@ -50,6 +122,8 @@ class AnalyticsSettings(BaseSettings):
     export_formats: list = Field(
         default=["json", "csv", "excel"], env="ANALYTICS_EXPORT_FORMATS"
     )
+
+    model_config = {"env_file": ".env", "extra": "ignore"}
 
 
 class Settings(BaseSettings):
@@ -76,13 +150,12 @@ class Settings(BaseSettings):
     # Database and Redis
     database: DatabaseSettings = DatabaseSettings()
     redis: RedisSettings = RedisSettings()
+    elasticsearch: ElasticsearchSettings = ElasticsearchSettings()
 
     # Analytics specific
     analytics: AnalyticsSettings = AnalyticsSettings()
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
+    model_config = {"case_sensitive": False, "extra": "ignore", "env_file": ".env"}
 
 
 # Global settings instance
