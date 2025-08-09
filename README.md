@@ -137,6 +137,81 @@ Mỗi service đều tự động tạo tài liệu API tương tác. Sau khi kh
 
 Chúng tôi hoan nghênh mọi sự đóng góp! Vui lòng tạo **Fork** và gửi **Pull Request**.
 
-## 📄 Giấy phép
+## � CI/CD Pipeline
+
+### ✅ **Production Features**
+- **🏗️ Production Docker Compose**: Resource limits, health checks, monitoring stack
+- **🗄️ Database Migration Automation**: Automated migrations with backup and rollback
+- **🔥 Load Testing Integration**: Automated Locust testing with CI/CD integration
+- **🧪 E2E Testing Pipeline**: End-to-end testing with security scanning
+- **📊 Monitoring & Alerting**: Prometheus metrics with Grafana dashboards
+
+### **Deployment Commands**
+```bash
+# Production deployment
+docker-compose -f docker-compose.prod.yml up -d
+
+# Database migrations
+./scripts/migrate.sh
+
+# Load testing
+python scripts/load_test.py --scenario=load
+```
+
+---
+
+## 🏗️ Service Architecture Standards
+
+### **Standardized Structure**
+All services follow this consistent structure:
+```
+{service_name}/
+├── main.py              # FastAPI application entry point
+├── requirements.txt     # Python dependencies
+├── Dockerfile          # Container configuration
+├── .env.example        # Environment template
+├── README.md           # Service documentation
+├── api/routers/        # API route handlers
+├── core/              # Core configuration
+├── models/            # Data models
+├── schemas/           # API schemas
+├── services/          # Business logic
+└── tests/             # Test suite
+```
+
+### **Shared App Factory Pattern**
+All services use the standardized pattern:
+```python
+from shared_code.core.app import create_app
+
+app = create_app(
+    service_name="Service Name",
+    settings=settings,
+    routers=[router1, router2],
+    startup_tasks=[startup_task],
+    shutdown_tasks=[shutdown_task],
+)
+```
+
+---
+
+## 🔧 Development Guidelines
+
+### **Adding a New Service**
+1. Copy the standardized service template
+2. Update service-specific configuration
+3. Implement business logic in `services/`
+4. Add API routes in `api/routers/`
+5. Write tests in `tests/`
+
+### **Shared Code Usage**
+- **Core**: Application factory, configuration, database
+- **Cache**: Redis caching with unified interface
+- **Utils**: Logging, security, validation utilities
+- **Models**: Shared database models
+
+---
+
+## �📄 Giấy phép
 
 Dự án này được cấp phép theo [MIT License](LICENSE).

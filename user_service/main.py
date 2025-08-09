@@ -11,7 +11,7 @@ from shared_code.core.app import create_app
 from shared_code.core.config import get_service_settings
 from shared_code.utils.logging import get_logger
 
-from app.controllers.user_router import router as user_router
+from api.routers.user_router import router as user_router
 
 logger = get_logger(__name__)
 settings = get_service_settings("user_service")

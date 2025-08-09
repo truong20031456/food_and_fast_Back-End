@@ -11,8 +11,8 @@ from shared_code.core.app import create_app
 from shared_code.core.config import get_service_settings
 from shared_code.utils.logging import get_logger
 
-from controllers.cart_controller import router as cart_router
-from controllers.order_controller import router as order_router
+from api.routers.cart_controller import router as cart_router
+from api.routers.order_controller import router as order_router
 from core.database import engine, Base
 
 logger = get_logger(__name__)

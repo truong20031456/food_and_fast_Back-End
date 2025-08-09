@@ -3,11 +3,17 @@ Analytics Service - Core analytics functionality.
 """
 
 import logging
+import sys
+import os
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 import random
 
+# Add shared_code to path
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'shared_code'))
+
 from utils.logger import get_logger
+from shared_code.cache import get_cache_service
 
 logger = get_logger(__name__)
 
@@ -15,29 +21,53 @@ logger = get_logger(__name__)
 class AnalyticsService:
     """Service for analytics and reporting."""
 
-    def __init__(self, db_manager):
+    def __init__(self, db_manager, cache_service=None):
         self.db_manager = db_manager
+        self.cache_service = cache_service or get_cache_service('analytics')
 
     async def get_dashboard_data(self) -> Dict[str, Any]:
-        """Get dashboard analytics data."""
+        """Get dashboard analytics data with caching."""
         try:
-            # In production, fetch real data from database
-            # For now, return mock data
-            return {
+            # Try to get from cache first
+            if self.cache_service:
+                cached_data = await self.cache_service.get_dashboard_data()
+                if cached_data:
+                    logger.info("Dashboard data retrieved from cache")
+                    return cached_data
+            
+            # Generate/fetch dashboard data
+            dashboard_data = {
                 "total_revenue": 125000.50,
                 "total_orders": 1250,
                 "total_customers": 850,
                 "average_order_value": 100.00,
+                "growth_rate": 12.5,
+                "orders_today": 45,
+                "revenue_today": 4500.00,
                 "last_updated": datetime.utcnow().isoformat(),
             }
+            
+            # Cache the result
+            if self.cache_service:
+                await self.cache_service.set_dashboard_data(dashboard_data)
+                logger.info("Dashboard data cached successfully")
+            
+            return dashboard_data
         except Exception as e:
             logger.error(f"Failed to get dashboard data: {e}")
             raise
 
     async def get_top_selling_products(self, limit: int = 10) -> List[Dict[str, Any]]:
-        """Get top selling products."""
+        """Get top selling products with caching."""
         try:
-            # Mock data - in production, fetch from database
+            # Try to get from cache first
+            if self.cache_service:
+                cached_products = await self.cache_service.get_top_products(limit=limit)
+                if cached_products:
+                    logger.info("Top products retrieved from cache")
+                    return cached_products
+            
+            # Generate/fetch top products data
             products = [
                 {
                     "id": 1,

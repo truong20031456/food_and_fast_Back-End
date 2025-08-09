@@ -1,23 +1,34 @@
-# Shared Code Configuration
+# Shared Code for Food Fast E-commerce
 
-This directory contains shared configuration, utilities, and base classes for all services in the Food & Fast E-Commerce Platform.
+This directory contains shared components, utilities, and base classes for all microservices in the Food & Fast E-Commerce Platform.
 
 ## 📁 Directory Structure
 
 ```
 shared_code/
-├── core/                 # Core configuration and base classes
-│   ├── app.py           # FastAPI application factory
-│   ├── config.py        # Base settings configuration
-│   ├── database.py      # Database connection management
-│   ├── dependencies.py  # Common dependency injection
-│   ├── exceptions.py    # Custom exception classes
-│   └── repository.py    # Base repository pattern
+├── cache/               # 🔥 Redis caching system
+│   ├── __init__.py     # Cache module exports
+│   ├── base_cache.py   # Base cache service implementation
+│   ├── cache_manager.py # Cache management utilities
+│   ├── redis_client.py # Redis connection management
+│   └── legacy_cache_service.py # Legacy cache service
+├── core/                # Core configuration and base classes
+│   ├── app.py          # FastAPI application factory
+│   ├── config.py       # Base settings configuration
+│   ├── database.py     # Database connection management
+│   ├── dependencies.py # Common dependency injection
+│   ├── exceptions.py   # Custom exception classes
+│   └── repository.py   # Base repository pattern
+├── middleware/          # 🛡️ Common middleware components
+│   └── __init__.py     # Middleware module
 ├── models/              # Shared data models
 │   └── base.py         # Base model classes
+├── monitoring/          # 📊 Monitoring and observability
+│   ├── __init__.py     # Monitoring module
+│   └── performance_monitor.py # Performance monitoring
 ├── services/            # Shared services
-│   └── cache_service.py # Cache service utilities
-├── utils/               # Utility functions
+│   └── __init__.py     # Services module
+├── utils/               # 🔧 Utility functions
 │   ├── cache_manager.py # Cache management
 │   ├── logging.py       # Logging configuration
 │   ├── redis.py         # Redis client utilities
