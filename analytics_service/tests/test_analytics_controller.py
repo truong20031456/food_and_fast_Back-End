@@ -12,7 +12,7 @@ class TestAnalyticsController:
 
     def test_get_dashboard_data(self, client: TestClient):
         """Test dashboard data endpoint."""
-        with patch("controllers.analytics_controller.AnalyticsService") as mock_service:
+        with patch("api.routers.analytics_router.AnalyticsService") as mock_service:
             mock_service.return_value.get_dashboard_data.return_value = {
                 "total_revenue": 10000.0,
                 "total_orders": 100,
@@ -22,7 +22,7 @@ class TestAnalyticsController:
                 "category_sales": [],
             }
 
-            response = client.get("/api/v1/analytics/dashboard")
+            response = client.get("/analytics/dashboard")
             assert response.status_code == 200
             data = response.json()
             assert "total_revenue" in data
@@ -30,7 +30,7 @@ class TestAnalyticsController:
 
     def test_get_sales_summary(self, client: TestClient):
         """Test sales summary endpoint."""
-        with patch("controllers.analytics_controller.AnalyticsService") as mock_service:
+        with patch("api.routers.analytics_router.AnalyticsService") as mock_service:
             mock_service.return_value.get_sales_summary.return_value = {
                 "period": "daily",
                 "data": [
@@ -43,7 +43,7 @@ class TestAnalyticsController:
                 ],
             }
 
-            response = client.get("/api/v1/analytics/sales/summary?period=daily")
+            response = client.get("/analytics/sales/summary?period=daily")
             assert response.status_code == 200
             data = response.json()
             assert "period" in data
