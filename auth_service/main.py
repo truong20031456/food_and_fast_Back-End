@@ -9,11 +9,11 @@ import sys
 import os
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-from core.app import create_app
-from core.config import get_service_settings
-from core.database import get_database_manager
+from shared_code.core.app import create_app
+from shared_code.core.config import get_service_settings
+from shared_code.core.database import get_database_manager
 from models.base import Base
-from controllers import (
+from api.routers import (
     auth_router,
     user_router,
     token_router,

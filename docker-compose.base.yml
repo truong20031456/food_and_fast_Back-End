@@ -1,0 +1,197 @@
+# ========================================
+# 🐳 Food Fast E-commerce - Docker Compose (Base)
+# ========================================
+# This is the base configuration for all environments
+# Use docker-compose.override.yml for development overrides
+
+version: '3.8'
+
+# ========================================
+# 🔧 COMMON CONFIGURATION
+# ========================================
+x-common-variables: &common-variables
+  ENVIRONMENT: ${ENVIRONMENT:-development}
+  SECRET_KEY: ${SECRET_KEY:-dev-secret-key}
+  JWT_SECRET_KEY: ${JWT_SECRET_KEY:-dev-jwt-secret}
+
+x-database-variables: &database-variables
+  <<: *common-variables
+  DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-password}@postgres:5432/${DB_NAME:-food_fast}
+
+x-service-common: &service-common
+  restart: unless-stopped
+  networks:
+    - food_fast_network
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+# ========================================
+# 🗄️ INFRASTRUCTURE SERVICES
+# ========================================
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: food_fast_postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME:-food_fast}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-dbs.sql:/docker-entrypoint-initdb.d/init-dbs.sql
+    networks:
+      - food_fast_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: food_fast_redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - food_fast_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ========================================
+  # 🚀 MICROSERVICES
+  # ========================================
+  api-gateway:
+    build:
+      context: ./api_gateway
+      dockerfile: Dockerfile
+    container_name: food_fast_api_gateway
+    ports:
+      - "${API_GATEWAY_PORT:-8000}:8000"
+    environment:
+      <<: *database-variables
+      SERVICE_PORT: 8000
+      REDIS_URL: redis://redis:6379/0
+    <<: *service-common
+
+  auth-service:
+    build:
+      context: ./auth_service
+      dockerfile: Dockerfile
+    container_name: food_fast_auth_service
+    ports:
+      - "${AUTH_SERVICE_PORT:-8001}:8001"
+    environment:
+      <<: *database-variables
+      SERVICE_PORT: 8001
+      REDIS_URL: redis://redis:6379/1
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-password}@postgres:5432/auth_service_db
+    <<: *service-common
+
+  user-service:
+    build:
+      context: ./user_service
+      dockerfile: Dockerfile
+    container_name: food_fast_user_service
+    ports:
+      - "${USER_SERVICE_PORT:-8002}:8002"
+    environment:
+      <<: *database-variables
+      SERVICE_PORT: 8002
+      REDIS_URL: redis://redis:6379/2
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-password}@postgres:5432/user_service_db
+    <<: *service-common
+
+  product-service:
+    build:
+      context: ./product_service
+      dockerfile: Dockerfile
+    container_name: food_fast_product_service
+    ports:
+      - "${PRODUCT_SERVICE_PORT:-8003}:8003"
+    environment:
+      <<: *database-variables
+      SERVICE_PORT: 8003
+      REDIS_URL: redis://redis:6379/3
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-password}@postgres:5432/product_service_db
+    <<: *service-common
+
+  order-service:
+    build:
+      context: ./order_service
+      dockerfile: Dockerfile
+    container_name: food_fast_order_service
+    ports:
+      - "${ORDER_SERVICE_PORT:-8004}:8004"
+    environment:
+      <<: *database-variables
+      SERVICE_PORT: 8004
+      REDIS_URL: redis://redis:6379/4
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-password}@postgres:5432/order_service_db
+    <<: *service-common
+
+  payment-service:
+    build:
+      context: ./payment_service
+      dockerfile: Dockerfile
+    container_name: food_fast_payment_service
+    ports:
+      - "${PAYMENT_SERVICE_PORT:-8005}:8005"
+    environment:
+      <<: *database-variables
+      SERVICE_PORT: 8005
+      REDIS_URL: redis://redis:6379/5
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-password}@postgres:5432/payment_service_db
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_development}
+    <<: *service-common
+
+  notification-service:
+    build:
+      context: ./notification_service
+      dockerfile: Dockerfile
+    container_name: food_fast_notification_service
+    ports:
+      - "${NOTIFICATION_SERVICE_PORT:-8006}:8006"
+    environment:
+      <<: *database-variables
+      SERVICE_PORT: 8006
+      REDIS_URL: redis://redis:6379/6
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-password}@postgres:5432/notification_service_db
+    <<: *service-common
+
+  analytics-service:
+    build:
+      context: ./analytics_service
+      dockerfile: Dockerfile
+    container_name: food_fast_analytics_service
+    ports:
+      - "${ANALYTICS_SERVICE_PORT:-8007}:8007"
+    environment:
+      <<: *database-variables
+      SERVICE_PORT: 8007
+      REDIS_URL: redis://redis:6379/7
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-password}@postgres:5432/analytics_service_db
+    <<: *service-common
+
+# ========================================
+# 📦 VOLUMES
+# ========================================
+volumes:
+  postgres_data:
+  redis_data:
+
+# ========================================
+# 🌐 NETWORKS
+# ========================================
+networks:
+  food_fast_network:
+    driver: bridge

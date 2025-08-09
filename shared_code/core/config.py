@@ -172,7 +172,7 @@ class BaseServiceSettings(BaseSettings):
             raise ValueError("Rate limit must be between 1 and 10000")
         return v
 
-    @root_validator
+    @root_validator(skip_on_failure=True)
     def validate_security_settings(cls, values):
         """Validate security-related settings"""
         environment = values.get("ENVIRONMENT")

@@ -1,0 +1,110 @@
+# ========================================
+# 🛠️ DEVELOPMENT OVERRIDES
+# ========================================
+# This file automatically loaded by docker-compose in development
+
+version: '3.8'
+
+services:
+  # ========================================
+  # 🛠️ DEVELOPMENT SERVICES
+  # ========================================
+  
+  # Development volumes for hot-reload
+  api-gateway:
+    volumes:
+      - ./api_gateway:/app
+      - ./shared_code:/app/shared_code
+    environment:
+      DEBUG: true
+      LOG_LEVEL: debug
+
+  auth-service:
+    volumes:
+      - ./auth_service:/app
+      - ./shared_code:/app/shared_code
+    environment:
+      DEBUG: true
+      LOG_LEVEL: debug
+
+  user-service:
+    volumes:
+      - ./user_service:/app
+      - ./shared_code:/app/shared_code
+    environment:
+      DEBUG: true
+      LOG_LEVEL: debug
+
+  product-service:
+    volumes:
+      - ./product_service:/app
+      - ./shared_code:/app/shared_code
+    environment:
+      DEBUG: true
+      LOG_LEVEL: debug
+
+  order-service:
+    volumes:
+      - ./order_service:/app
+      - ./shared_code:/app/shared_code
+    environment:
+      DEBUG: true
+      LOG_LEVEL: debug
+
+  payment-service:
+    volumes:
+      - ./payment_service:/app
+      - ./shared_code:/app/shared_code
+    environment:
+      DEBUG: true
+      LOG_LEVEL: debug
+
+  notification-service:
+    volumes:
+      - ./notification_service:/app
+      - ./shared_code:/app/shared_code
+    environment:
+      DEBUG: true
+      LOG_LEVEL: debug
+
+  analytics-service:
+    volumes:
+      - ./analytics_service:/app
+      - ./shared_code:/app/shared_code
+    environment:
+      DEBUG: true
+      LOG_LEVEL: debug
+
+  # ========================================
+  # 📊 DEVELOPMENT MONITORING (Optional)
+  # ========================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: food_fast_prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    networks:
+      - food_fast_network
+    profiles:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: food_fast_grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - food_fast_network
+    profiles:
+      - monitoring
+
+volumes:
+  prometheus_data:
+  grafana_data:

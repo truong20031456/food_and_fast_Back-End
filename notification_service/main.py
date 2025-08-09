@@ -3,151 +3,86 @@ Notification Service - Main application entry point.
 Handles email, SMS, and push notifications for the Food Fast e-commerce platform.
 """
 
-import os
 import sys
-from contextlib import asynccontextmanager
+import os
 
 # Add shared modules to path
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "shared"))
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.abspath(os.path.join(current_dir, ".."))
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-import uvicorn
+from shared_code.core.app import create_app
+from shared_code.core.config import get_service_settings
+from shared_code.utils.logging import get_logger
 
-from controllers.notification_controller import (
-    NotificationController,
-    router as notification_router,
-)
+from api.routers.notification_router import router as notification_router
 from channels.email import EmailService
 from channels.sms import SMSService
 from support.chat_service import ChatService
-from shared.core.database import get_database_manager, init_db, close_db
-from shared.utils.redis import get_redis_manager
-from shared.utils.logging import get_logger, setup_logging
 
-# Setup logging
-setup_logging(level=os.getenv("LOG_LEVEL", "INFO"))
 logger = get_logger(__name__)
+settings = get_service_settings("notification_service")
 
 # Initialize services
 email_service = None
 sms_service = None
 chat_service = None
-notification_controller = None
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Application lifespan manager."""
-    global email_service, sms_service, chat_service, notification_controller
-
-    # Startup
+async def startup_task():
+    """Notification service startup tasks"""
+    global email_service, sms_service, chat_service
+    
     logger.info("Notification Service starting up...")
-
+    
     try:
-        # Initialize database
-        await init_db()
-        logger.info("Database initialized successfully")
-
-        # Initialize Redis connection
-        redis_manager = get_redis_manager()
-
-        # Test database connection
-        from shared.core.database import db_manager
-
-        db_healthy = await db_manager.health_check()
-        if not db_healthy:
-            logger.error("Failed to connect to database")
-            raise Exception("Database connection failed")
-
-        # Initialize notification services
-        email_service = EmailService(redis_manager)
-        sms_service = SMSService(redis_manager)
-        chat_service = ChatService(db_manager, redis_manager)
-
-        # Initialize controller
-        notification_controller = NotificationController(
-            email_service, sms_service, chat_service
-        )
-
-        logger.info("Notification Service started successfully")
-
+        # Initialize notification channels
+        email_service = EmailService()
+        sms_service = SMSService()
+        chat_service = ChatService()
+        
+        logger.info("Notification Service startup completed")
+        
     except Exception as e:
-        logger.error(f"Failed to start Notification Service: {e}")
+        logger.error(f"Notification Service startup failed: {e}")
         raise
 
-    yield
 
-    # Shutdown
+async def shutdown_task():
+    """Notification service shutdown tasks"""
     logger.info("Notification Service shutting down...")
+    
     try:
-        await close_db()
-        logger.info("Notification Service shutdown complete")
+        # Cleanup notification services
+        if email_service:
+            await email_service.cleanup()
+        if sms_service:
+            await sms_service.cleanup()
+        if chat_service:
+            await chat_service.cleanup()
+            
+        logger.info("Notification Service shutdown completed")
+        
     except Exception as e:
-        logger.error(f"Error during shutdown: {e}")
+        logger.error(f"Notification Service shutdown error: {e}")
 
 
-# Create FastAPI application
-app = FastAPI(
-    title="Food Fast - Notification Service",
-    description="Microservice for handling notifications",
-    version="1.0.0",
-    lifespan=lifespan,
+# Create the FastAPI app with standardized configuration
+app = create_app(
+    service_name="Notification Service",
+    settings=settings,
+    routers=[notification_router],
+    startup_tasks=[startup_task],
+    shutdown_tasks=[shutdown_task],
 )
-
-# CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Include routers
-app.include_router(notification_router)
-
-
-@app.get("/")
-async def root():
-    """Root endpoint."""
-    return {
-        "message": "Food Fast Notification Service",
-        "status": "running",
-        "version": "1.0.0",
-    }
-
-
-@app.get("/health")
-async def health_check():
-    """Health check endpoint."""
-    try:
-        from shared.core.database import db_manager
-
-        db_healthy = await db_manager.health_check()
-
-        status = "healthy" if db_healthy else "unhealthy"
-
-        return {
-            "status": status,
-            "service": "notification-service",
-            "database": "connected" if db_healthy else "disconnected",
-        }
-    except Exception as e:
-        logger.error(f"Health check failed: {e}")
-        return JSONResponse(
-            status_code=503,
-            content={
-                "status": "unhealthy",
-                "service": "notification-service",
-                "error": str(e),
-            },
-        )
-
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 8006))
-    host = os.getenv("HOST", "0.0.0.0")
-
-    uvicorn.run("main:app", host=host, port=port, reload=True, log_level="info")
+    import uvicorn
+    uvicorn.run(
+        "main:app",
+        host=getattr(settings, 'SERVICE_HOST', '0.0.0.0'),
+        port=getattr(settings, 'SERVICE_PORT', 8006),
+        reload=getattr(settings, 'DEBUG', False),
+        log_level=getattr(settings, 'LOG_LEVEL', 'info').lower(),
+    )

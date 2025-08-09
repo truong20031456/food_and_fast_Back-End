@@ -11,14 +11,14 @@ from shared_code.core.app import create_app
 from shared_code.core.config import get_service_settings
 from shared_code.utils.logging import get_logger
 
-from app.routers import gateway, auth
-from app.core.startup import startup_task
+from api.routers import gateway, auth
+from core.startup import startup_task
 
 logger = get_logger(__name__)
 settings = get_service_settings("api_gateway")
 
 
-from app.core.error_handler import http_exception_handler, generic_exception_handler
+from core.error_handler import http_exception_handler, generic_exception_handler
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 # Create the FastAPI app with standardized configuration
